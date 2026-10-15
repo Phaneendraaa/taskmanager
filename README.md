@@ -1,31 +1,43 @@
-# Task Manager (Kotlin + Jetpack Compose)
+# Task Manager
 
-Simple offline task manager. Frontend only: add, complete, delete, filter
-(All / Active / Done), clear done. Tasks are saved on the device.
+Minimal black-and-white task and habit tracker for Android (Kotlin + Jetpack Compose).
+Fully offline: everything is stored on the device.
 
-## Build the APK (no Android Studio needed)
+## Features
 
-Requirements: JDK 17+ and the Android SDK command-line tools.
+**Tasks**
+- Title, notes, "done by" date and optional time, priority (none / low / medium / high)
+- Grouped by Overdue, Today, Tomorrow, Upcoming, Anytime
+- Filters: All, Today, Overdue, Done
+- Overdue detection (including a missed time today), today's progress bar
+- Edit, delete with undo, clear completed, created / completed timestamps
 
-1. Install the SDK packages (once):
-   ```
-   sdkmanager "platforms;android-35" "build-tools;35.0.0" "platform-tools"
-   ```
-2. Tell Gradle where the SDK is, in `local.properties`:
-   ```
-   sdk.dir=/path/to/android-sdk
-   ```
-3. Build:
-   ```
-   ./gradlew assembleDebug
-   ```
-4. The APK is at `app/build/outputs/apk/debug/app-debug.apk`.
+**Habits**
+- Daily habits shown every day with a one-tap check
+- Current streak, 30-day rate, last-7-days strip (tap a past day to backfill)
+- Detail view with best streak, total days and a 16-week heatmap
 
-## Or with Android Studio
+**Insights**
+- Completed this week / all time, on-time rate, overdue count
+- 7-day completion chart, weekly habit consistency
+- Light / Dark / System appearance
 
-Open this folder, let Gradle sync, press Run.
+## Install (no Android Studio)
 
-## Install on your phone
+Every push to `main` builds the APK on GitHub Actions and publishes it to the
+`latest` release:
 
-Copy `app-debug.apk` to the phone and open it (allow "Install unknown apps"),
-or run `adb install -r app-debug.apk`.
+https://github.com/Phaneendraaa/taskmanager/releases/download/latest/TaskManager.apk
+
+Open it on your phone and tap Install. New builds install over the old one and
+keep your data (the debug signing key is fixed in `app/debug.keystore`).
+
+## Build locally
+
+Needs JDK 17 and the Android SDK (platform 35, build-tools 35.0.0).
+
+```
+./gradlew assembleDebug
+```
+
+APK: `app/build/outputs/apk/debug/app-debug.apk`

@@ -10,10 +10,10 @@ android {
 
     defaultConfig {
         applicationId = "com.example.taskmanager"
-        minSdk = 24
+        minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "2.0"
     }
 
     // Fixed debug key so every build is signed the same and installs as an update.

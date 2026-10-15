@@ -30,7 +30,20 @@ jobs:
       - name: Build debug APK
         run: |
           chmod +x ./gradlew
-          ./gradlew assembleDebug --no-daemon --stacktrace
+          set +e
+          ./gradlew assembleDebug --no-daemon --stacktrace > build.log 2>&1
+          code=$?
+          set -e
+          if [ "$code" -ne 0 ]; then
+            # Surface compile errors as one annotation so they are visible without the raw log.
+            msg=$( { grep -E '^e: ' build.log; grep -A8 'What went wrong' build.log; } 2>/dev/null \
+              | sed -E 's#file:///home/runner/work/[^/]+/[^/]+/##' \
+              | head -60 \
+              | sed 's/%/%25/g' \
+              | awk '{printf "%s%%0A", $0}' )
+            echo "::error title=Gradle build failed::${msg}"
+            exit "$code"
+          fi
 
       - uses: actions/upload-artifact@v4
         with:
