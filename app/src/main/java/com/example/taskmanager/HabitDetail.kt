@@ -53,7 +53,7 @@ fun HabitDetail(
     // The habit only disappears through Delete, which closes this screen.
     if (habit == null) return
 
-    val tint = habit.category.color
+    val tint = LocalPalette.current.muted
     val streak = habit.currentStreak(today)
 
     Column(
@@ -82,7 +82,7 @@ fun HabitDetail(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Box(
-                    Modifier.size(56.dp).clip(RoundedCornerShape(18.dp)).background(tint.copy(alpha = 0.16f)),
+                    Modifier.size(56.dp).clip(RoundedCornerShape(18.dp)).background(LocalPalette.current.field),
                     contentAlignment = Alignment.Center
                 ) { AppIcon(habit.iconKind(), tint, size = 30.dp) }
                 Spacer(Modifier.width(14.dp))
@@ -90,14 +90,16 @@ fun HabitDetail(
                     Txt(habit.name, size = 20.sp, weight = FontWeight.Bold, serif = true, maxLines = 2)
                     Spacer(Modifier.height(4.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        AppIcon(Ic.FLAME, Color(0xFFE2864E), size = 16.dp, filled = true)
+                        AppIcon(Ic.FLAME, p.muted, size = 16.dp)
                         Spacer(Modifier.width(4.dp))
-                        Txt("$streak day streak", size = 13.sp, color = p.muted)
+                        Txt("${habit.graceStreak(today)} day run", size = 13.sp, color = p.muted)
                         Txt("  •  " + habit.category.label, size = 13.sp, color = p.muted)
                     }
                     Txt(habitSubtitle(habit), size = 12.sp, color = p.muted)
                 }
             }
+            Spacer(Modifier.height(12.dp))
+            MakeItStick(vm, habit, today)
             Spacer(Modifier.height(16.dp))
             SegmentedControl(listOf("Overview", "History", "Edit"), tab, { tab = it })
             Spacer(Modifier.height(18.dp))
@@ -203,7 +205,7 @@ private fun Overview(vm: AppViewModel, habit: Habit, today: Long) {
     ) {
         BigStat("${habit.overallRate(today)}%", "Completion")
         BigStat(habit.doneDays.size.toString(), "Total days")
-        BigStat(habit.bestStreak().toString(), "Longest streak")
+        BigStat(habit.bestStreak().toString(), "Best run")
     }
 
     Spacer(Modifier.height(14.dp))
@@ -211,6 +213,44 @@ private fun Overview(vm: AppViewModel, habit: Habit, today: Long) {
         Txt("Last 16 weeks", size = 15.sp, weight = FontWeight.Bold, serif = true)
         Spacer(Modifier.height(12.dp))
         Heatmap(habit.doneDays, today)
+    }
+}
+
+@Composable
+private fun MakeItStick(vm: AppViewModel, habit: Habit, today: Long) {
+    val p = LocalPalette.current
+    val auto = habit.isAutomatic(today)
+    val day = (today - habit.createdDay + 1).toInt().coerceAtLeast(1)
+    Column(Modifier.fillMaxWidth().cardStyle(p).padding(16.dp)) {
+        val sentence = habit.cueSentence()
+        if (sentence != null) {
+            Txt(sentence, size = 15.sp, weight = FontWeight.Medium, lineHeight = 21.sp)
+            Spacer(Modifier.height(10.dp))
+        }
+        if (habit.identity.isNotBlank()) {
+            Txt("Every rep is a vote for being " + habit.identity.trim().trimEnd('.') + ".", size = 13.sp, color = p.muted, lineHeight = 18.sp)
+            Spacer(Modifier.height(10.dp))
+        }
+        if (habit.minimum.isNotBlank()) {
+            Txt("Minimum: " + habit.minimum.trim(), size = 13.sp, color = p.muted)
+            Spacer(Modifier.height(10.dp))
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Txt(
+                if (auto) "Automatic" else "Day ${minOf(day, 66)} of 66",
+                size = 13.sp, weight = FontWeight.SemiBold,
+                color = if (auto) p.accentText else p.text, modifier = Modifier.weight(1f)
+            )
+            Txt("${habit.consistency(today)}% over 30 days", size = 13.sp, color = p.muted)
+        }
+        Spacer(Modifier.height(8.dp))
+        GradientProgress(if (auto) 1f else habit.automaticProgress(today), Modifier.fillMaxWidth(), 6.dp)
+        Spacer(Modifier.height(8.dp))
+        Txt(
+            if (auto) "This habit runs on its own now. You can ease off the reminders."
+            else "On average a habit takes about 66 days to become automatic. One missed day barely matters.",
+            size = 12.sp, color = p.muted, lineHeight = 17.sp
+        )
     }
 }
 

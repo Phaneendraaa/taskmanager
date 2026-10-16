@@ -58,6 +58,9 @@ class HabitDraft(h: Habit?) {
     var minute by mutableStateOf<Int?>(h?.timeMinute)
     var icon by mutableStateOf(h?.icon ?: "")
     var reminder by mutableStateOf(h?.reminder ?: false)
+    var cue by mutableStateOf(h?.cue ?: "")
+    var minimum by mutableStateOf(h?.minimum ?: "")
+    var identity by mutableStateOf(h?.identity ?: "")
 
     fun applyTo(base: Habit): Habit = base.copy(
         name = name.trim(),
@@ -65,7 +68,10 @@ class HabitDraft(h: Habit?) {
         daysMask = mask,
         timeMinute = minute,
         icon = icon,
-        reminder = reminder && minute != null
+        reminder = reminder && minute != null,
+        cue = cue.trim(),
+        minimum = minimum.trim(),
+        identity = identity.trim()
     )
 }
 
@@ -125,6 +131,55 @@ fun HabitFields(d: HabitDraft, onMic: (() -> Unit)? = null) {
                 contentAlignment = Alignment.Center
             ) { AppIcon(Ic.MIC, p.muted, size = 20.dp) }
         }
+    }
+
+    Spacer(Modifier.height(24.dp))
+    SmallLabel("Anchor it to your day")
+    Spacer(Modifier.height(8.dp))
+    FieldBox(Ic.REPEAT) {
+        PlainField(
+            value = d.cue,
+            onValueChange = { d.cue = it.take(60) },
+            placeholder = "After I... (e.g. pour my morning coffee)",
+            size = 15.sp,
+            singleLine = true
+        )
+    }
+    val sentence = Habit(id = "", name = d.name.trim(), createdDay = 0, cue = d.cue).cueSentence()
+    if (sentence != null && d.name.isNotBlank()) {
+        Spacer(Modifier.height(8.dp))
+        Txt(sentence, size = 13.sp, color = p.accentText, lineHeight = 18.sp)
+    } else {
+        Spacer(Modifier.height(8.dp))
+        Txt("Attaching a habit to something you already do makes it far more likely to happen.", size = 12.sp, color = p.muted, lineHeight = 17.sp)
+    }
+
+    Spacer(Modifier.height(20.dp))
+    SmallLabel("Minimum version for bad days")
+    Spacer(Modifier.height(8.dp))
+    FieldBox(Ic.TARGET) {
+        PlainField(
+            value = d.minimum,
+            onValueChange = { d.minimum = it.take(60) },
+            placeholder = "e.g. read one page",
+            size = 15.sp,
+            singleLine = true
+        )
+    }
+    Spacer(Modifier.height(8.dp))
+    Txt("Doing the tiny version still counts as showing up.", size = 12.sp, color = p.muted)
+
+    Spacer(Modifier.height(20.dp))
+    SmallLabel("Who does this make you? (optional)")
+    Spacer(Modifier.height(8.dp))
+    FieldBox(Ic.PERSON) {
+        PlainField(
+            value = d.identity,
+            onValueChange = { d.identity = it.take(60) },
+            placeholder = "e.g. someone who reads every day",
+            size = 15.sp,
+            singleLine = true
+        )
     }
 
     Spacer(Modifier.height(20.dp))
@@ -261,15 +316,15 @@ fun HabitFields(d: HabitDraft, onMic: (() -> Unit)? = null) {
                 Modifier
                     .size(46.dp)
                     .clip(RoundedCornerShape(14.dp))
-                    .background(if (on) d.category.color.copy(alpha = 0.2f) else p.field)
+                    .background(if (on) p.accent.copy(alpha = 0.14f) else p.field)
                     .border(
                         if (on) 1.5.dp else 1.dp,
-                        if (on) d.category.color else p.cardBorder,
+                        if (on) p.accent else p.cardBorder,
                         RoundedCornerShape(14.dp)
                     )
                     .clickable { d.icon = if (on) "" else ic.name },
                 contentAlignment = Alignment.Center
-            ) { AppIcon(ic, if (on) d.category.color else p.muted, size = 22.dp) }
+            ) { AppIcon(ic, if (on) p.accent else p.muted, size = 22.dp) }
         }
     }
 
@@ -282,6 +337,23 @@ fun HabitFields(d: HabitDraft, onMic: (() -> Unit)? = null) {
             },
             onDismiss = { showTime = false }
         )
+    }
+}
+
+@Composable
+private fun FieldBox(ic: Ic, content: @Composable () -> Unit) {
+    val p = LocalPalette.current
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(p.field)
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        AppIcon(ic, p.muted, size = 19.dp)
+        Spacer(Modifier.width(12.dp))
+        Box(Modifier.weight(1f)) { content() }
     }
 }
 
@@ -397,11 +469,9 @@ fun HabitForm(
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp)
         ) {
-            SegmentedControl(listOf("Habit", "Task"), 0, { if (it == 1) onSwitchToTask() })
-            Spacer(Modifier.height(20.dp))
-            Txt("Add habit", size = 30.sp, weight = FontWeight.Bold, serif = true)
+            Txt("New habit", size = 28.sp, weight = FontWeight.SemiBold, serif = true)
             Spacer(Modifier.height(4.dp))
-            Txt("Small actions, repeated every day.", size = 15.sp, color = p.muted)
+            Txt("Make it small, attach it to your day, repeat it.", size = 14.sp, color = p.muted)
             Spacer(Modifier.height(20.dp))
 
             HabitFields(draft, onMic = { startVoice(0) })
@@ -445,7 +515,7 @@ fun HabitForm(
                             .padding(horizontal = 6.dp, vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        AppIcon(q.ic, q.cat.color, size = 22.dp)
+                        AppIcon(q.ic, p.muted, size = 22.dp)
                         Spacer(Modifier.width(14.dp))
                         Txt(q.name, size = 15.sp, weight = FontWeight.Medium, modifier = Modifier.weight(1f))
                         AppIcon(Ic.PLUS, p.muted, size = 20.dp)
@@ -458,7 +528,7 @@ fun HabitForm(
             Spacer(Modifier.height(24.dp))
         }
         GradientButton(
-            text = "Create Habit",
+            text = "Create habit",
             onClick = { create() },
             enabled = draft.name.isNotBlank(),
             modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp)

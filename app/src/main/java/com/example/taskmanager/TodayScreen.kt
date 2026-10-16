@@ -188,7 +188,7 @@ fun TodayScreen(
                 ) {
                     SummaryCell("$doneHabits/${dueHabits.size}", "Habits", Modifier.weight(1f))
                     VDivider()
-                    SummaryCell("${picked.count { it.done }}/${picked.size}", "Priorities", Modifier.weight(1f))
+                    SummaryCell(if (picked.isEmpty()) "–" else "${picked.count { it.done }}/${picked.size}", "Priorities", Modifier.weight(1f))
                     VDivider()
                     SummaryCell(if (focusToday >= 60) "${focusToday / 60}h ${focusToday % 60}m" else "${focusToday}m", "Focus", Modifier.weight(1f))
                 }

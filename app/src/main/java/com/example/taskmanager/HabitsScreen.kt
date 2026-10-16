@@ -52,7 +52,7 @@ fun HabitsScreen(
     Column(
         Modifier
             .fillMaxSize()
-            .background(Brush.verticalGradient(listOf(p.glow, p.bg, p.bg)))
+            .background(p.bg)
             .statusBarsPadding()
     ) {
         Row(
@@ -63,18 +63,11 @@ fun HabitsScreen(
                 RoundIconButton(Ic.BACK, onClick = onBack)
                 Spacer(Modifier.size(14.dp))
             }
-            Txt("Habits", size = 30.sp, weight = FontWeight.Bold, serif = true, modifier = Modifier.weight(1f))
-            Box(
-                Modifier
-                    .size(44.dp)
-                    .clip(CircleShape)
-                    .background(p.accent)
-                    .clickable(onClick = onAdd),
-                contentAlignment = Alignment.Center
-            ) { AppIcon(Ic.PLUS, Color.White, size = 24.dp, stroke = 2.4f) }
+            Txt("Habits", size = 28.sp, weight = FontWeight.SemiBold, serif = true, modifier = Modifier.weight(1f))
+            RoundIconButton(Ic.PLUS, onClick = onAdd, bordered = false, bg = Color.Transparent)
         }
 
-        Row(
+        if (vm.habits.size >= 7) Row(
             Modifier
                 .horizontalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp, vertical = 6.dp),
@@ -116,7 +109,7 @@ fun HabitsScreen(
                         Txt(
                             period.label,
                             size = 18.sp,
-                            weight = FontWeight.Bold,
+                            weight = FontWeight.SemiBold,
                             serif = true,
                             modifier = Modifier.weight(1f)
                         )
@@ -130,8 +123,8 @@ fun HabitsScreen(
                                 onToggle = { if (isDue) vm.toggleHabitDay(h.id, today) },
                                 onClick = { onOpenHabit(h.id) },
                                 modifier = Modifier.alpha(if (isDue) 1f else 0.55f),
-                                bar = true,
-                                checkAtEnd = true
+                                checkAtEnd = true,
+                                subtitle = habitStatus(h, today)
                             )
                         }
                     }
@@ -140,4 +133,13 @@ fun HabitsScreen(
             Spacer(Modifier.height(30.dp))
         }
     }
+}
+
+/** One line of honest status: consistency over 30 days, run length, and whether it is automatic. */
+private fun habitStatus(h: Habit, today: Long): String {
+    if (h.isAutomatic(today)) return "Automatic  •  ${h.consistency(today)}% over 30 days"
+    val run = h.graceStreak(today)
+    val age = today - h.createdDay + 1
+    return if (age < 7) "New  •  " + habitSubtitle(h)
+    else "${h.consistency(today)}% over 30 days  •  $run day run"
 }

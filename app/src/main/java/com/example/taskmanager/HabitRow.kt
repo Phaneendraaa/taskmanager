@@ -80,7 +80,8 @@ fun HabitRow(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     bar: Boolean = false,
-    checkAtEnd: Boolean = false
+    checkAtEnd: Boolean = false,
+    subtitle: String = habitSubtitle(habit)
 ) {
     val p = LocalPalette.current
     val done = today in habit.doneDays
@@ -126,7 +127,7 @@ fun HabitRow(
                 color = if (done) p.muted else p.text,
                 maxLines = 1
             )
-            Txt(habitSubtitle(habit), size = 12.sp, color = p.muted, maxLines = 1)
+            Txt(subtitle, size = 12.sp, color = p.muted, maxLines = 1)
         }
         if (checkAtEnd) {
             CheckCircle(done, onToggle)
