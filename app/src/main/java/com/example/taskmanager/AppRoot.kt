@@ -88,6 +88,11 @@ fun AppRoot(vm: AppViewModel) {
                     padding = padding,
                     onOpenTask = { id -> stack.add(Screen.Detail(id)) }
                 )
+                2 -> StatsScreen(
+                    vm = vm,
+                    padding = padding,
+                    onPickDay = { day -> vm.selectedDay = day; tab = 0 }
+                )
                 else -> ComingSoon(listOf("Home", "Calendar", "Stats", "Profile")[tab], padding)
             }
         }

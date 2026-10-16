@@ -16,8 +16,8 @@ TODO = not started
 | 2 | Home screen (greeting hero, date strip, category chips, task cards, search) | DONE |
 | 3 | Create / Edit task (date, time, repeat, category, priority, sub-tasks, attachments, voice notes) | DONE |
 | 4 | Task detail (chips, info, sub-tasks, attachments, Mark as Complete, undo delete) | DONE |
-| 5 | Calendar (month grid with task dots, day list) | PUSHED |
-| 6 | Progress (Week/Month/Year, ring, stats, daily goal, tasks by category) | TODO |
+| 5 | Calendar (month grid with task dots, day list) | DONE |
+| 6 | Progress (Week/Month/Year, ring, stats, daily goal, tasks by category) | PUSHED |
 | 7 | Profile and Habits (theme, daily goal, name, daily habits with streaks) | TODO |
 | 8 | Final polish, README, release check | TODO |
 
@@ -49,9 +49,14 @@ TODO = not started
   chips, date, time range, repeat, description, sub-tasks with progress, attachments, Mark as Complete
 - Tapping a task opens the detail; Edit opens the form; Delete shows an Undo bar
 
-### 5. Calendar (PUSHED)
+### 5. Calendar (DONE)
 - `CalendarScreen.kt`: month grid (Monday first) with category dots, previous / next month,
   today highlight, selected day list using the same task cards; the selected day is shared with Home
+
+### 6. Progress (PUSHED)
+- `StatsScreen.kt`: Week / Month / Year switch, week strip with status dots (tap a day to open it
+  on Home), completion ring with percent, Completed / Pending / Overdue counts, Daily Goal bar,
+  Tasks by Category donut with legend
 
 ### Notes
 - Everything is stored on the device only.
