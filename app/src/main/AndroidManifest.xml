@@ -25,6 +25,14 @@
             android:exported="false" />
 
         <receiver
+            android:name=".HabitActionReceiver"
+            android:exported="false" />
+
+        <receiver
+            android:name=".NudgeReceiver"
+            android:exported="false" />
+
+        <receiver
             android:name=".FocusReceiver"
             android:exported="false" />
 

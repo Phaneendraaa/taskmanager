@@ -80,7 +80,17 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         loadPlanning()
         focusSessions.addAll(loadFocus())
         Reminders.sync(getApplication<Application>(), habits, remindersOn)
+        Reminders.syncNudges(getApplication<Application>(), remindersOn)
         restoreTimer()
+    }
+
+    /** Picks up changes made outside the app, such as tapping Done on a notification. */
+    fun reloadFromDisk() {
+        val fresh = loadHabits()
+        if (fresh.map { it.id to it.doneDays } != habits.map { it.id to it.doneDays }) {
+            habits.clear()
+            habits.addAll(fresh)
+        }
     }
 
     fun newId(): String = UUID.randomUUID().toString()
@@ -113,6 +123,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         remindersOn = on
         prefs.edit().putBoolean("remindersOn", on).apply()
         Reminders.sync(getApplication<Application>(), habits, on)
+        Reminders.syncNudges(getApplication<Application>(), on)
     }
 
     fun updateAccent(key: String) {

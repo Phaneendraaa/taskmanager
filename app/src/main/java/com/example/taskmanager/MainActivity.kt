@@ -43,5 +43,6 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         vm.refreshNow()
+        vm.reloadFromDisk()
     }
 }

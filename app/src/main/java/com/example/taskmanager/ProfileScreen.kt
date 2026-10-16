@@ -183,8 +183,8 @@ fun ProfileScreen(
             ) { AppIcon(Ic.BELL, p.accent, size = 22.dp) }
             Spacer(Modifier.width(14.dp))
             Column(Modifier.weight(1f)) {
-                Txt("Reminders", size = 16.sp, weight = FontWeight.SemiBold)
-                Txt("Notify at each habit's time", size = 12.sp, color = p.muted, maxLines = 1)
+                Txt("Reminders and nudges", size = 16.sp, weight = FontWeight.SemiBold)
+                Txt("Habit times, morning plan, evening check", size = 12.sp, color = p.muted, maxLines = 1)
             }
             Switch(
                 checked = vm.remindersOn,
