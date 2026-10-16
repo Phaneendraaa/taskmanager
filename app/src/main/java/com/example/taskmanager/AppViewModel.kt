@@ -3,6 +3,7 @@ package com.example.taskmanager
 import android.app.Application
 import android.content.Context
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -13,7 +14,7 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
 
-/** Holds tasks and habits and saves them on this device (SharedPreferences). No backend. */
+/** Holds tasks, habits and settings and saves them on this device (SharedPreferences). No backend. */
 class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     private val prefs = app.getSharedPreferences("tasks", Context.MODE_PRIVATE)
@@ -24,53 +25,56 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     var themeMode by mutableStateOf(prefs.getString("theme", "light") ?: "light")
         private set
 
+    var dailyGoal by mutableIntStateOf(prefs.getInt("goal", 5))
+        private set
+
+    var userName by mutableStateOf(prefs.getString("name", "") ?: "")
+        private set
+
     var now by mutableStateOf(LocalDateTime.now())
         private set
+
+    /** The day shown on Home and Calendar (epoch day). */
+    var selectedDay by mutableStateOf(LocalDate.now().toEpochDay())
 
     init {
         tasks.addAll(loadTasks())
         habits.addAll(loadHabits())
     }
 
+    fun newId(): String = UUID.randomUUID().toString()
+
     fun refreshNow() {
+        val before = now.toLocalDate().toEpochDay()
         now = LocalDateTime.now()
+        val after = now.toLocalDate().toEpochDay()
+        if (after != before && selectedDay == before) selectedDay = after
     }
+
+    // ---------- Settings ----------
 
     fun setTheme(mode: String) {
         themeMode = mode
         prefs.edit().putString("theme", mode).apply()
     }
 
-    // ---------- Tasks ----------
-
-    fun addTask(title: String, notes: String, dueDay: Long?, dueMinute: Int?, priority: Int) {
-        val clean = title.trim()
-        if (clean.isEmpty()) return
-        tasks.add(
-            Task(
-                id = UUID.randomUUID().toString(),
-                title = clean,
-                notes = notes.trim(),
-                dueDay = dueDay,
-                dueMinute = dueMinute,
-                priority = priority
-            )
-        )
-        saveTasks()
+    fun setDailyGoal(goal: Int) {
+        dailyGoal = goal.coerceIn(1, 30)
+        prefs.edit().putInt("goal", dailyGoal).apply()
     }
 
-    fun updateTask(id: String, title: String, notes: String, dueDay: Long?, dueMinute: Int?, priority: Int) {
-        val i = tasks.indexOfFirst { it.id == id }
-        if (i < 0) return
-        val clean = title.trim()
-        if (clean.isEmpty()) return
-        tasks[i] = tasks[i].copy(
-            title = clean,
-            notes = notes.trim(),
-            dueDay = dueDay,
-            dueMinute = dueMinute,
-            priority = priority
-        )
+    fun setUserName(name: String) {
+        userName = name.take(24)
+        prefs.edit().putString("name", userName).apply()
+    }
+
+    // ---------- Tasks ----------
+
+    fun taskById(id: String): Task? = tasks.firstOrNull { it.id == id }
+
+    fun upsertTask(task: Task) {
+        val i = tasks.indexOfFirst { it.id == task.id }
+        if (i >= 0) tasks[i] = task else tasks.add(task)
         saveTasks()
     }
 
@@ -78,12 +82,43 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val i = tasks.indexOfFirst { it.id == id }
         if (i < 0) return
         val t = tasks[i]
-        tasks[i] = if (t.done) {
-            t.copy(done = false, completedAt = null)
+        if (t.done) {
+            tasks[i] = t.copy(done = false, completedAt = null)
         } else {
-            t.copy(done = true, completedAt = System.currentTimeMillis())
+            tasks[i] = t.copy(done = true, completedAt = System.currentTimeMillis())
+            spawnNextOccurrence(t)
         }
         saveTasks()
+    }
+
+    /** A repeating task creates its next occurrence when it is completed. */
+    private fun spawnNextOccurrence(t: Task) {
+        val day = t.dueDay ?: return
+        if (t.repeat == Repeat.NONE) return
+        val today = LocalDate.now().toEpochDay()
+        var next = nextDay(day, t.repeat)
+        var guard = 0
+        while (next < today && guard < 800) {
+            next = nextDay(next, t.repeat)
+            guard++
+        }
+        tasks.add(
+            t.copy(
+                id = newId(),
+                dueDay = next,
+                done = false,
+                completedAt = null,
+                createdAt = System.currentTimeMillis(),
+                subtasks = t.subtasks.map { it.copy(done = false) }
+            )
+        )
+    }
+
+    private fun nextDay(day: Long, r: Repeat): Long = when (r) {
+        Repeat.DAILY -> day + 1
+        Repeat.WEEKLY -> day + 7
+        Repeat.MONTHLY -> LocalDate.ofEpochDay(day).plusMonths(1).toEpochDay()
+        Repeat.NONE -> day
     }
 
     fun deleteTask(id: String): Task? {
@@ -99,9 +134,52 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         saveTasks()
     }
 
+    fun duplicateTask(id: String): String? {
+        val t = taskById(id) ?: return null
+        val copy = t.copy(
+            id = newId(),
+            title = t.title + " (copy)",
+            done = false,
+            completedAt = null,
+            createdAt = System.currentTimeMillis(),
+            subtasks = t.subtasks.map { it.copy(id = newId(), done = false) }
+        )
+        tasks.add(copy)
+        saveTasks()
+        return copy.id
+    }
+
     fun clearCompleted() {
         tasks.removeAll { it.done }
         saveTasks()
+    }
+
+    fun toggleSubTask(taskId: String, subId: String) {
+        val t = taskById(taskId) ?: return
+        upsertTask(t.copy(subtasks = t.subtasks.map { if (it.id == subId) it.copy(done = !it.done) else it }))
+    }
+
+    fun addSubTask(taskId: String, title: String) {
+        val clean = title.trim()
+        if (clean.isEmpty()) return
+        val t = taskById(taskId) ?: return
+        upsertTask(t.copy(subtasks = t.subtasks + SubTask(newId(), clean)))
+    }
+
+    fun removeSubTask(taskId: String, subId: String) {
+        val t = taskById(taskId) ?: return
+        upsertTask(t.copy(subtasks = t.subtasks.filter { it.id != subId }))
+    }
+
+    fun addAttachment(taskId: String, att: Attachment) {
+        val t = taskById(taskId) ?: return
+        if (t.attachments.any { it.uri == att.uri }) return
+        upsertTask(t.copy(attachments = t.attachments + att))
+    }
+
+    fun removeAttachment(taskId: String, uri: String) {
+        val t = taskById(taskId) ?: return
+        upsertTask(t.copy(attachments = t.attachments.filter { it.uri != uri }))
     }
 
     // ---------- Habits ----------
@@ -109,13 +187,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun addHabit(name: String) {
         val clean = name.trim()
         if (clean.isEmpty()) return
-        habits.add(
-            Habit(
-                id = UUID.randomUUID().toString(),
-                name = clean,
-                createdDay = LocalDate.now().toEpochDay()
-            )
-        )
+        habits.add(Habit(id = newId(), name = clean, createdDay = LocalDate.now().toEpochDay()))
         saveHabits()
     }
 
@@ -158,14 +230,39 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             o.put("title", t.title)
             o.put("notes", t.notes)
             o.put("priority", t.priority)
+            o.put("category", t.category.name)
+            o.put("repeat", t.repeat.name)
             o.put("done", t.done)
             o.put("createdAt", t.createdAt)
             val due = t.dueDay
             if (due != null) o.put("dueDay", due)
             val minute = t.dueMinute
             if (minute != null) o.put("dueMinute", minute)
+            val end = t.endMinute
+            if (end != null) o.put("endMinute", end)
             val completed = t.completedAt
             if (completed != null) o.put("completedAt", completed)
+
+            val subs = JSONArray()
+            t.subtasks.forEach { s ->
+                val so = JSONObject()
+                so.put("id", s.id)
+                so.put("title", s.title)
+                so.put("done", s.done)
+                subs.put(so)
+            }
+            o.put("subtasks", subs)
+
+            val atts = JSONArray()
+            t.attachments.forEach { a ->
+                val ao = JSONObject()
+                ao.put("uri", a.uri)
+                ao.put("name", a.name)
+                ao.put("size", a.size)
+                ao.put("mime", a.mime)
+                atts.put(ao)
+            }
+            o.put("attachments", atts)
             arr.put(o)
         }
         prefs.edit().putString("list", arr.toString()).apply()
@@ -177,13 +274,43 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             val arr = JSONArray(raw)
             (0 until arr.length()).map { i ->
                 val o = arr.getJSONObject(i)
+
+                val subs = ArrayList<SubTask>()
+                val subArr = o.optJSONArray("subtasks")
+                if (subArr != null) {
+                    for (k in 0 until subArr.length()) {
+                        val so = subArr.getJSONObject(k)
+                        subs.add(SubTask(so.getString("id"), so.getString("title"), so.optBoolean("done", false)))
+                    }
+                }
+                val atts = ArrayList<Attachment>()
+                val attArr = o.optJSONArray("attachments")
+                if (attArr != null) {
+                    for (k in 0 until attArr.length()) {
+                        val ao = attArr.getJSONObject(k)
+                        atts.add(
+                            Attachment(
+                                ao.getString("uri"),
+                                ao.optString("name", "File"),
+                                ao.optLong("size", 0L),
+                                ao.optString("mime", "")
+                            )
+                        )
+                    }
+                }
+
                 Task(
                     id = o.getString("id"),
                     title = o.getString("title"),
                     notes = o.optString("notes", ""),
                     dueDay = if (o.has("dueDay")) o.getLong("dueDay") else null,
                     dueMinute = if (o.has("dueMinute")) o.getInt("dueMinute") else null,
+                    endMinute = if (o.has("endMinute")) o.getInt("endMinute") else null,
                     priority = o.optInt("priority", 0),
+                    category = enumOrDefault(o.optString("category", ""), Category.OTHER),
+                    repeat = enumOrDefault(o.optString("repeat", ""), Repeat.NONE),
+                    subtasks = subs,
+                    attachments = atts,
                     done = o.optBoolean("done", false),
                     createdAt = o.optLong("createdAt", System.currentTimeMillis()),
                     completedAt = if (o.has("completedAt")) o.getLong("completedAt") else null
@@ -191,6 +318,14 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             }
         } catch (e: Exception) {
             emptyList()
+        }
+    }
+
+    private inline fun <reified E : Enum<E>> enumOrDefault(name: String, default: E): E {
+        return try {
+            enumValueOf<E>(name)
+        } catch (e: Exception) {
+            default
         }
     }
 
