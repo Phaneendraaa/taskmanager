@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -17,12 +18,19 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import kotlin.math.acos
+import kotlin.math.atan2
+import kotlin.math.cos
+import kotlin.math.sin
+import kotlin.math.sqrt
 
 /** Every icon in the app is drawn here, so no icon library is needed. */
 enum class Ic {
     SEARCH, MENU, BACK, CLOSE, PLUS, EDIT, MORE_V, MORE_H, CALENDAR, CLOCK, REPEAT, FLAG, MIC, CLIP,
     CHEVRON_DOWN, CHEVRON_LEFT, CHEVRON_RIGHT, ARROW_RIGHT, CHECK, HOME, PERSON, CHART, BRIEFCASE,
-    BOOK, DUMBBELL, PLANE, DOC, CROWN, TRASH, TARGET, DRAG, NOTES, EXCLAIM, COPY
+    BOOK, DUMBBELL, PLANE, DOC, CROWN, TRASH, TARGET, DRAG, NOTES, EXCLAIM, COPY,
+    SUN, MOON, DROP, FLAME, STAR, LEAF, BELL, PLAY, PAUSE, STOP, MUSIC, TIMER, SLIDERS, GEAR, HEART,
+    SPARKLE, FOOD, LAPTOP, CLOUD
 }
 
 @Composable
@@ -71,6 +79,165 @@ private fun DrawScope.drawIcon(ic: Ic, tint: Color, filled: Boolean, stroke: Flo
 
     fun box(x: Float, y: Float, w: Float, h: Float, r: Float) {
         drawRoundRect(tint, topLeft = o(x, y), size = Size(w * s, h * s), cornerRadius = CornerRadius(r * s), style = st)
+    }
+
+
+    fun shape(fill: Boolean, block: Path.() -> Unit) {
+        val path = Path()
+        path.block()
+        drawPath(path, tint, style = if (fill) Fill else st)
+    }
+    fun Path.mv(x: Float, y: Float) = moveTo(x * s, y * s)
+    fun Path.cu(a: Float, b: Float, c: Float, d: Float, e: Float, f: Float) =
+        cubicTo(a * s, b * s, c * s, d * s, e * s, f * s)
+
+    fun crescent(fill: Boolean) {
+        val c1x = 12f; val c1y = 12f; val r1 = 8.8f
+        val c2x = 16.4f; val c2y = 8.0f; val r2 = 7.4f
+        val dx = c2x - c1x; val dy = c2y - c1y
+        val d = sqrt(dx * dx + dy * dy)
+        val a = (r1 * r1 - r2 * r2 + d * d) / (2f * d)
+        val phi = Math.toDegrees(acos((a / r1).toDouble())).toFloat()
+        val theta = Math.toDegrees(atan2(dy.toDouble(), dx.toDouble())).toFloat()
+        fun rad(deg: Float) = Math.toRadians(deg.toDouble())
+        val sx = c1x + r1 * cos(rad(theta + phi)).toFloat()
+        val sy = c1y + r1 * sin(rad(theta + phi)).toFloat()
+        val ex = c1x + r1 * cos(rad(theta - phi)).toFloat()
+        val ey = c1y + r1 * sin(rad(theta - phi)).toFloat()
+        val psiA = Math.toDegrees(atan2((ey - c2y).toDouble(), (ex - c2x).toDouble())).toFloat()
+        val psiB = Math.toDegrees(atan2((sy - c2y).toDouble(), (sx - c2x).toDouble())).toFloat()
+        var toMid = (theta + 180f - psiA) % 360f
+        if (toMid > 180f) toMid -= 360f
+        if (toMid < -180f) toMid += 360f
+        val dir = if (toMid >= 0f) 1f else -1f
+        var sweep2 = ((psiB - psiA) * dir) % 360f
+        if (sweep2 < 0f) sweep2 += 360f
+        sweep2 *= dir
+        shape(fill) {
+            moveTo(sx * s, sy * s)
+            arcTo(Rect((c1x - r1) * s, (c1y - r1) * s, (c1x + r1) * s, (c1y + r1) * s), theta + phi, 360f - 2f * phi, false)
+            arcTo(Rect((c2x - r2) * s, (c2y - r2) * s, (c2x + r2) * s, (c2y + r2) * s), psiA, sweep2, false)
+            close()
+        }
+    }
+
+    when (ic) {
+        Ic.SUN -> {
+            ring(12f, 12f, 4.2f)
+            line(12f, 2.8f, 12f, 5f); line(12f, 19f, 12f, 21.2f)
+            line(2.8f, 12f, 5f, 12f); line(19f, 12f, 21.2f, 12f)
+            line(5.5f, 5.5f, 7.1f, 7.1f); line(16.9f, 16.9f, 18.5f, 18.5f)
+            line(5.5f, 18.5f, 7.1f, 16.9f); line(16.9f, 7.1f, 18.5f, 5.5f)
+        }
+        Ic.MOON -> crescent(filled)
+        Ic.DROP -> shape(filled) {
+            mv(12f, 3f)
+            cu(12f, 3f, 5.5f, 10f, 5.5f, 14.5f)
+            cu(5.5f, 18.1f, 8.4f, 21f, 12f, 21f)
+            cu(15.6f, 21f, 18.5f, 18.1f, 18.5f, 14.5f)
+            cu(18.5f, 10f, 12f, 3f, 12f, 3f)
+            close()
+        }
+        Ic.FLAME -> shape(filled) {
+            mv(12f, 3f)
+            cu(13f, 7f, 18f, 9.5f, 18f, 15f)
+            cu(18f, 18.3f, 15.3f, 21f, 12f, 21f)
+            cu(8.7f, 21f, 6f, 18.3f, 6f, 15f)
+            cu(6f, 12.5f, 7.5f, 11f, 8.5f, 9.5f)
+            cu(9.2f, 11f, 10f, 11.8f, 10.8f, 12f)
+            cu(11f, 9f, 10.5f, 6f, 12f, 3f)
+            close()
+        }
+        Ic.STAR -> poly(
+            12f, 3f, 14.4f, 9.2f, 21f, 9.6f, 15.9f, 13.8f, 17.6f, 20.2f,
+            12f, 16.7f, 6.4f, 20.2f, 8.1f, 13.8f, 3f, 9.6f, 9.6f, 9.2f,
+            close = true, fill = filled
+        )
+        Ic.LEAF -> {
+            shape(filled) {
+                mv(5f, 19f)
+                cu(5f, 10f, 10f, 5f, 20f, 4f)
+                cu(20f, 14f, 15f, 19f, 5f, 19f)
+                close()
+            }
+            line(5f, 19f, 13f, 11f)
+        }
+        Ic.BELL -> {
+            shape(filled) {
+                mv(6f, 17f)
+                cu(7.5f, 15.5f, 7.5f, 13.5f, 7.5f, 11f)
+                cu(7.5f, 8f, 9.5f, 6f, 12f, 6f)
+                cu(14.5f, 6f, 16.5f, 8f, 16.5f, 11f)
+                cu(16.5f, 13.5f, 16.5f, 15.5f, 18f, 17f)
+                close()
+            }
+            line(9.8f, 20f, 14.2f, 20f)
+            line(12f, 3.8f, 12f, 6f)
+        }
+        Ic.PLAY -> poly(8f, 5f, 19f, 12f, 8f, 19f, close = true, fill = true)
+        Ic.PAUSE -> {
+            poly(7f, 5f, 10.5f, 5f, 10.5f, 19f, 7f, 19f, close = true, fill = true)
+            poly(13.5f, 5f, 17f, 5f, 17f, 19f, 13.5f, 19f, close = true, fill = true)
+        }
+        Ic.STOP -> poly(6.5f, 6.5f, 17.5f, 6.5f, 17.5f, 17.5f, 6.5f, 17.5f, close = true, fill = true)
+        Ic.MUSIC -> {
+            ring(7f, 17.5f, 2.8f)
+            ring(16f, 15.5f, 2.8f)
+            line(9.8f, 17.5f, 9.8f, 6f)
+            line(18.8f, 15.5f, 18.8f, 4f)
+            line(9.8f, 6f, 18.8f, 4f)
+        }
+        Ic.TIMER -> {
+            ring(12f, 13.5f, 7.5f)
+            line(9.5f, 3f, 14.5f, 3f)
+            line(12f, 3f, 12f, 6f)
+            poly(12f, 9.5f, 12f, 13.5f, 14.5f, 15f)
+        }
+        Ic.SLIDERS -> {
+            line(4f, 8f, 20f, 8f)
+            line(4f, 16f, 20f, 16f)
+            drawCircle(tint, radius = 2.4f * s, center = o(9f, 8f))
+            drawCircle(tint, radius = 2.4f * s, center = o(15f, 16f))
+        }
+        Ic.GEAR -> {
+            ring(12f, 12f, 3.2f)
+            ring(12f, 12f, 6.8f)
+            line(12f, 2.8f, 12f, 5.2f); line(12f, 18.8f, 12f, 21.2f)
+            line(2.8f, 12f, 5.2f, 12f); line(18.8f, 12f, 21.2f, 12f)
+            line(5.5f, 5.5f, 7.2f, 7.2f); line(16.8f, 16.8f, 18.5f, 18.5f)
+            line(5.5f, 18.5f, 7.2f, 16.8f); line(16.8f, 7.2f, 18.5f, 5.5f)
+        }
+        Ic.HEART -> shape(filled) {
+            mv(12f, 20f)
+            cu(4f, 14.5f, 3f, 10f, 3f, 8.5f)
+            cu(3f, 6f, 5f, 4.5f, 7.2f, 4.5f)
+            cu(9.2f, 4.5f, 11f, 5.8f, 12f, 7.5f)
+            cu(13f, 5.8f, 14.8f, 4.5f, 16.8f, 4.5f)
+            cu(19f, 4.5f, 21f, 6f, 21f, 8.5f)
+            cu(21f, 10f, 20f, 14.5f, 12f, 20f)
+            close()
+        }
+        Ic.SPARKLE -> poly(12f, 3f, 14f, 10f, 21f, 12f, 14f, 14f, 12f, 21f, 10f, 14f, 3f, 12f, 10f, 10f, close = true, fill = filled)
+        Ic.FOOD -> {
+            line(6f, 3f, 6f, 9f); line(10f, 3f, 10f, 9f)
+            poly(6f, 9f, 8f, 11.5f, 10f, 9f)
+            line(8f, 11.5f, 8f, 21f)
+            line(16f, 3f, 16f, 21f)
+            poly(16f, 3f, 19.5f, 6.5f, 19.5f, 12f, 16f, 12f)
+        }
+        Ic.LAPTOP -> {
+            box(5f, 5.5f, 14f, 10f, 2f)
+            line(3f, 19f, 21f, 19f)
+        }
+        Ic.CLOUD -> shape(filled) {
+            mv(7f, 18f)
+            cu(4f, 18f, 3f, 14.5f, 5.5f, 13f)
+            cu(5.5f, 9.5f, 10f, 8f, 12.5f, 10.5f)
+            cu(15f, 8.5f, 19f, 10.5f, 18.5f, 14f)
+            cu(21f, 14.5f, 21f, 18f, 18f, 18f)
+            close()
+        }
+        else -> Unit
     }
 
     when (ic) {

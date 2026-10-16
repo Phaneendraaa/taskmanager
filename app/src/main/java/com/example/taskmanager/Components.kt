@@ -40,6 +40,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -62,7 +63,8 @@ fun Txt(
     strike: Boolean = false,
     maxLines: Int = Int.MAX_VALUE,
     align: TextAlign? = null,
-    lineHeight: TextUnit = TextUnit.Unspecified
+    lineHeight: TextUnit = TextUnit.Unspecified,
+    serif: Boolean = false
 ) {
     Text(
         text = text,
@@ -70,6 +72,7 @@ fun Txt(
         color = color,
         fontSize = size,
         fontWeight = weight,
+        fontFamily = if (serif) FontFamily.Serif else null,
         textDecoration = if (strike) TextDecoration.LineThrough else null,
         maxLines = maxLines,
         textAlign = align,
