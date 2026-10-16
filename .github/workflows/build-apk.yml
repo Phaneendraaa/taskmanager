@@ -60,3 +60,37 @@ jobs:
             --title "Latest build" \
             --notes "Built from commit ${{ github.sha }}" \
             --target "${{ github.sha }}"
+
+      # Renders the main screens to PNG files and publishes them on the "previews" branch,
+      # so spacing and clipped text can be checked without a phone. Never blocks a release.
+      - name: Render screenshot previews
+        continue-on-error: true
+        run: |
+          set +e
+          ./gradlew testDebugUnitTest --no-daemon --tests '*PreviewShots*' > test.log 2>&1
+          code=$?
+          set -e
+          if [ "$code" -ne 0 ]; then
+            msg=$( { grep -E '^e: ' test.log; grep -E 'FAILED|Exception|Error:' test.log; } 2>/dev/null \
+              | sed -E 's#file:///home/runner/work/[^/]+/[^/]+/##' | head -40 \
+              | sed 's/%/%25/g' | awk '{printf "%s%%0A", $0}' )
+            echo "::warning title=Preview tests failed::${msg}"
+          fi
+          exit "$code"
+
+      - name: Publish previews branch
+        if: always()
+        continue-on-error: true
+        run: |
+          if ls app/build/previews/*.png > /dev/null 2>&1; then
+            cd app/build/previews
+            git init -q
+            git checkout -q -b previews
+            git config user.name "ci"
+            git config user.email "ci@users.noreply.github.com"
+            git add .
+            git commit -q -m "previews for ${{ github.sha }}"
+            git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}" previews
+          else
+            echo "::warning title=No previews::no PNG files were produced"
+          fi
