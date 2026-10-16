@@ -49,6 +49,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         private set
     var focusLabel by mutableStateOf("")
 
+    /** Daily deep-work goal in minutes. */
+    var focusTarget by mutableIntStateOf(prefs.getInt("focusTarget", 120))
+        private set
+
     var themeMode by mutableStateOf(prefs.getString("theme", "light") ?: "light")
         private set
 
@@ -76,6 +80,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         loadPlanning()
         focusSessions.addAll(loadFocus())
         Reminders.sync(getApplication<Application>(), habits, remindersOn)
+        restoreTimer()
     }
 
     fun newId(): String = UUID.randomUUID().toString()
@@ -165,6 +170,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         focusLen = prefs.getInt("focusLen", 25)
         shortLen = prefs.getInt("shortLen", 5)
         longLen = prefs.getInt("longLen", 15)
+        focusTarget = prefs.getInt("focusTarget", 120)
         timerRunning = false
         focusMode = 0
         timerLeftMs = focusLen * 60_000L
@@ -198,34 +204,70 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         if (timerRunning) return
         timerEndAt = System.currentTimeMillis() + timerLeftMs
         timerRunning = true
+        prefs.edit().putLong("timerEnd", timerEndAt).putInt("timerMode", focusMode)
+            .putString("timerLabel", focusLabel).apply()
+        Reminders.scheduleFocusEnd(getApplication<Application>(), timerEndAt, focusLabel)
     }
 
     fun pauseTimer() {
         if (!timerRunning) return
         timerLeftMs = timerRemainingMs(System.currentTimeMillis())
         timerRunning = false
+        clearTimerState()
     }
 
     fun selectMode(mode: Int) {
         timerRunning = false
         focusMode = mode
         timerLeftMs = lenOf(mode) * 60_000L
+        clearTimerState()
     }
 
     fun resetTimer() = selectMode(focusMode)
 
+    private fun clearTimerState() {
+        prefs.edit().remove("timerEnd").remove("timerMode").remove("timerLabel").apply()
+        Reminders.cancelFocusEnd(getApplication<Application>())
+    }
+
     /** Call on every tick. Returns true when a session just ended. */
     fun completeIfDone(): Boolean {
         if (!timerRunning || timerEndAt > System.currentTimeMillis()) return false
+        finishSession(timerEndAt)
+        return true
+    }
+
+    private fun finishSession(endedAt: Long) {
         timerRunning = false
+        clearTimerState()
         if (focusMode == 0) {
-            logFocus(focusLen, focusLabel.ifBlank { "Focus" })
-            val doneToday = focusSessions.count { epochDayOf(it.endedAt) == LocalDate.now().toEpochDay() }
+            focusSessions.add(FocusSession(endedAt, focusLen, focusLabel.ifBlank { "Focus" }))
+            saveFocus()
+            val doneToday = focusSessions.count { epochDayOf(it.endedAt) == epochDayOf(endedAt) }
             selectMode(if (doneToday % 4 == 0) 2 else 1)
         } else {
             selectMode(0)
         }
-        return true
+    }
+
+    /** After the app was closed: resume a running timer, or log a session that ended meanwhile. */
+    private fun restoreTimer() {
+        val end = prefs.getLong("timerEnd", 0L)
+        if (end <= 0L) return
+        focusMode = prefs.getInt("timerMode", 0).coerceIn(0, 2)
+        focusLabel = prefs.getString("timerLabel", "") ?: ""
+        if (end <= System.currentTimeMillis()) {
+            finishSession(end)
+        } else {
+            timerEndAt = end
+            timerLeftMs = end - System.currentTimeMillis()
+            timerRunning = true
+        }
+    }
+
+    fun updateFocusTarget(minutes: Int) {
+        focusTarget = minutes.coerceIn(15, 480)
+        prefs.edit().putInt("focusTarget", focusTarget).apply()
     }
 
     fun logFocus(minutes: Int, label: String) {

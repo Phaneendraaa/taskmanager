@@ -14,7 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -71,8 +71,8 @@ fun FocusScreen(vm: AppViewModel, onClose: (() -> Unit)?) {
 
     // Keep the screen awake while the timer page is open.
     val view = LocalView.current
-    DisposableEffect(Unit) {
-        view.keepScreenOn = true
+    DisposableEffect(vm.timerRunning) {
+        view.keepScreenOn = vm.timerRunning
         onDispose { view.keepScreenOn = false }
     }
 
@@ -96,15 +96,17 @@ fun FocusScreen(vm: AppViewModel, onClose: (() -> Unit)?) {
     Column(
         Modifier
             .fillMaxSize()
-            .background(Brush.verticalGradient(listOf(p.glow, p.bg, p.bg)))
-            .systemBarsPadding()
+            .background(p.bg)
+            .statusBarsPadding()
     ) {
         Row(
-            Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp),
+            Modifier.fillMaxWidth().padding(start = 20.dp, end = 8.dp, top = 14.dp, bottom = 6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            if (onClose != null) RoundIconButton(Ic.CLOSE, onClick = onClose, bordered = false, bg = Color.Transparent)
-            Spacer(Modifier.weight(1f))
+            if (onClose != null) {
+                RoundIconButton(Ic.CLOSE, onClick = onClose, bordered = false, bg = Color.Transparent)
+            }
+            Txt("Focus", size = 28.sp, weight = FontWeight.SemiBold, serif = true, modifier = Modifier.weight(1f))
             RoundIconButton(Ic.SLIDERS, onClick = { settings = true }, bordered = false, bg = Color.Transparent)
         }
 
@@ -115,82 +117,78 @@ fun FocusScreen(vm: AppViewModel, onClose: (() -> Unit)?) {
                 .padding(horizontal = 20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(50))
-                    .background(p.field)
-                    .padding(4.dp)
-            ) {
-                MODE_NAMES.forEachIndexed { i, name ->
-                    val on = vm.focusMode == i
-                    Box(
-                        Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(50))
-                            .background(if (on) p.accent else Color.Transparent)
-                            .clickable { vm.selectMode(i) }
-                            .padding(vertical = 11.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Txt(
-                            name,
-                            size = 13.sp,
-                            weight = if (on) FontWeight.SemiBold else FontWeight.Medium,
-                            color = if (on) Color.White else p.text,
-                            maxLines = 1
-                        )
-                    }
-                }
-            }
+            SegmentedControl(MODE_NAMES, vm.focusMode, { vm.selectMode(it) })
 
-            Spacer(Modifier.height(26.dp))
-            Box(Modifier.size(270.dp), contentAlignment = Alignment.Center) {
-                ProgressRing(elapsed, Modifier.fillMaxSize(), thickness = 14.dp)
+            Spacer(Modifier.height(28.dp))
+            Box(Modifier.size(264.dp), contentAlignment = Alignment.Center) {
+                ProgressRing(elapsed, Modifier.fillMaxSize(), thickness = 8.dp)
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Txt(clock(remaining), size = 56.sp, weight = FontWeight.Bold, serif = true)
+                    Txt(clock(remaining), size = 54.sp, weight = FontWeight.Medium, serif = true)
                     Txt(
-                        if (isFocus) (vm.focusLabel.ifBlank { "Deep Work" }) else MODE_NAMES[vm.focusMode],
-                        size = 16.sp,
+                        if (isFocus) (vm.focusLabel.ifBlank { "Deep work" }) else "Rest",
+                        size = 15.sp,
                         color = p.muted,
                         maxLines = 1,
-                        modifier = Modifier.padding(horizontal = 30.dp),
+                        modifier = Modifier.padding(horizontal = 36.dp),
                         align = TextAlign.Center
                     )
                 }
             }
 
-            Spacer(Modifier.height(16.dp))
-            Box(
-                Modifier.size(40.dp).clip(CircleShape).background(p.accent.copy(alpha = 0.14f)),
-                contentAlignment = Alignment.Center
-            ) { AppIcon(Ic.LEAF, p.accent, size = 22.dp) }
-            Spacer(Modifier.height(6.dp))
-            Txt(
-                if (isFocus) "Stay focused." else "Take a breather.",
-                size = 14.sp,
-                color = p.muted
-            )
+            Spacer(Modifier.height(26.dp))
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    Modifier.size(54.dp).clip(CircleShape).background(p.field).clickable { vm.resetTimer() },
+                    contentAlignment = Alignment.Center
+                ) { AppIcon(Ic.STOP, p.text, size = 20.dp, filled = true) }
+                Box(
+                    Modifier
+                        .size(76.dp)
+                        .clip(CircleShape)
+                        .background(p.inverse)
+                        .clickable { if (vm.timerRunning) vm.pauseTimer() else vm.startTimer() },
+                    contentAlignment = Alignment.Center
+                ) {
+                    AppIcon(
+                        if (vm.timerRunning) Ic.PAUSE else Ic.PLAY,
+                        p.onInverse,
+                        size = 32.dp,
+                        filled = true
+                    )
+                }
+                Box(
+                    Modifier
+                        .size(54.dp)
+                        .clip(CircleShape)
+                        .background(p.field)
+                        .clickable { vm.selectMode(if (vm.focusMode == 0) 1 else 0) },
+                    contentAlignment = Alignment.Center
+                ) { AppIcon(Ic.ARROW_RIGHT, p.text, size = 22.dp) }
+            }
 
-            Spacer(Modifier.height(18.dp))
+            Spacer(Modifier.height(28.dp))
             Row(
                 Modifier
                     .fillMaxWidth()
-                    .cardStyle(p, 20.dp)
+                    .cardStyle(p)
                     .clickable { pickTask = true }
                     .padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Box(
-                    Modifier.size(40.dp).clip(RoundedCornerShape(12.dp)).background(p.accent.copy(alpha = 0.14f)),
+                    Modifier.size(38.dp).clip(RoundedCornerShape(10.dp)).background(p.field),
                     contentAlignment = Alignment.Center
-                ) { AppIcon(Ic.TARGET, p.accent, size = 22.dp) }
+                ) { AppIcon(Ic.TARGET, p.muted, size = 20.dp) }
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
-                    Txt("Current task", size = 12.sp, color = p.muted)
+                    Txt("Working on", size = 12.sp, color = p.muted)
                     Txt(
-                        vm.focusLabel.ifBlank { "Choose what you are working on" },
-                        size = 16.sp,
+                        vm.focusLabel.ifBlank { "Choose from today's priorities" },
+                        size = 15.sp,
                         weight = FontWeight.SemiBold,
                         maxLines = 1
                     )
@@ -198,55 +196,30 @@ fun FocusScreen(vm: AppViewModel, onClose: (() -> Unit)?) {
                 AppIcon(Ic.CHEVRON_RIGHT, p.muted, size = 20.dp)
             }
 
-            Spacer(Modifier.height(22.dp))
-            Row(
-                Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(
-                    Modifier.size(58.dp).clip(CircleShape).background(p.field).clickable { vm.resetTimer() },
-                    contentAlignment = Alignment.Center
-                ) { AppIcon(Ic.STOP, p.text, size = 22.dp, filled = true) }
-                Box(
-                    Modifier
-                        .size(80.dp)
-                        .clip(CircleShape)
-                        .background(p.gradient)
-                        .clickable { if (vm.timerRunning) vm.pauseTimer() else vm.startTimer() },
-                    contentAlignment = Alignment.Center
-                ) {
-                    AppIcon(
-                        if (vm.timerRunning) Ic.PAUSE else Ic.PLAY,
-                        Color.White,
-                        size = 34.dp,
-                        filled = true
+            Spacer(Modifier.height(12.dp))
+            Column(Modifier.fillMaxWidth().cardStyle(p).padding(16.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Txt("Deep work today", size = 12.sp, color = p.muted)
+                        Txt(
+                            "$todayMinutes of ${vm.focusTarget} min",
+                            size = 16.sp,
+                            weight = FontWeight.SemiBold,
+                            maxLines = 1
+                        )
+                    }
+                    Txt(
+                        if (todaySessions.size == 1) "1 session" else "${todaySessions.size} sessions",
+                        size = 13.sp,
+                        color = p.muted,
+                        maxLines = 1
                     )
                 }
-                Box(
-                    Modifier
-                        .size(58.dp)
-                        .clip(CircleShape)
-                        .background(p.field)
-                        .clickable { vm.selectMode(if (vm.focusMode == 0) 1 else 0) },
-                    contentAlignment = Alignment.Center
-                ) { AppIcon(Ic.ARROW_RIGHT, p.text, size = 24.dp) }
-            }
-
-            Spacer(Modifier.height(24.dp))
-            Row(
-                Modifier.fillMaxWidth().cardStyle(p, 20.dp).padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                AppIcon(Ic.TIMER, p.accent, size = 22.dp)
-                Spacer(Modifier.width(12.dp))
-                Column(Modifier.weight(1f)) {
-                    Txt("Focus today", size = 12.sp, color = p.muted)
-                    Txt(
-                        "${todaySessions.size} sessions  •  $todayMinutes min",
-                        size = 15.sp,
-                        weight = FontWeight.SemiBold
-                    )
+                Spacer(Modifier.height(12.dp))
+                GradientProgress(todayMinutes.toFloat() / vm.focusTarget.coerceAtLeast(1), Modifier.fillMaxWidth(), 6.dp)
+                if (todayMinutes >= vm.focusTarget) {
+                    Spacer(Modifier.height(10.dp))
+                    Txt("Target reached. Anything more is a bonus.", size = 12.sp, color = p.accentText)
                 }
             }
             Spacer(Modifier.height(30.dp))
@@ -255,11 +228,12 @@ fun FocusScreen(vm: AppViewModel, onClose: (() -> Unit)?) {
 
     if (pickTask) {
         val options = ArrayList<String>()
+        vm.prioritiesFor(today).forEach { id -> vm.taskById(id)?.let { if (!it.done) options.add(it.title) } }
         vm.habits.filter { it.isDue(today) && today !in it.doneDays }.forEach { options.add(it.name) }
         vm.tasks.filter { !it.done }.forEach { options.add(it.title) }
         AlertDialog(
             onDismissRequest = { pickTask = false },
-            title = { Text("Current task") },
+            title = { Text("Working on") },
             text = {
                 Column(Modifier.verticalScroll(rememberScrollState())) {
                     DialogRow("No task", vm.focusLabel.isBlank()) {
@@ -326,6 +300,7 @@ fun FocusLengthsDialog(vm: AppViewModel, onDismiss: () -> Unit) {
     var f by remember { mutableLongStateOf(vm.focusLen.toLong()) }
     var s by remember { mutableLongStateOf(vm.shortLen.toLong()) }
     var l by remember { mutableLongStateOf(vm.longLen.toLong()) }
+    var t by remember { mutableLongStateOf(vm.focusTarget.toLong()) }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Timer lengths") },
@@ -334,11 +309,13 @@ fun FocusLengthsDialog(vm: AppViewModel, onDismiss: () -> Unit) {
                 LenRow("Focus", f.toInt(), { f = (f - 5).coerceAtLeast(5) }, { f = (f + 5).coerceAtMost(90) })
                 LenRow("Short break", s.toInt(), { s = (s - 1).coerceAtLeast(1) }, { s = (s + 1).coerceAtMost(30) })
                 LenRow("Long break", l.toInt(), { l = (l - 5).coerceAtLeast(5) }, { l = (l + 5).coerceAtMost(60) })
+                LenRow("Daily target", t.toInt(), { t = (t - 15).coerceAtLeast(15) }, { t = (t + 15).coerceAtMost(480) })
             }
         },
         confirmButton = {
             TextButton(onClick = {
                 vm.updateFocusLengths(f.toInt(), s.toInt(), l.toInt())
+                vm.updateFocusTarget(t.toInt())
                 onDismiss()
             }) { Text("Save") }
         },

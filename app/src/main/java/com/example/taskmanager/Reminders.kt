@@ -73,6 +73,51 @@ object Reminders {
         prefs.edit().putStringSet("remIds", keep).apply()
     }
 
+    private const val FOCUS_ACTION = "com.example.taskmanager.FOCUS_DONE"
+    private const val FOCUS_CHANNEL = "focus"
+
+    private fun focusPending(context: Context, label: String): PendingIntent {
+        val intent = Intent(context, FocusReceiver::class.java).setAction(FOCUS_ACTION).putExtra("label", label)
+        return PendingIntent.getBroadcast(
+            context, 7001, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+    }
+
+    /** Rings when a focus or break timer ends, even with the screen off or the app in the background. */
+    fun scheduleFocusEnd(context: Context, atMs: Long, label: String) {
+        val alarm = context.getSystemService(AlarmManager::class.java) ?: return
+        try {
+            alarm.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, atMs, focusPending(context, label))
+        } catch (e: Exception) {
+        }
+    }
+
+    fun cancelFocusEnd(context: Context) {
+        val alarm = context.getSystemService(AlarmManager::class.java) ?: return
+        alarm.cancel(focusPending(context, ""))
+    }
+
+    fun notifyFocusDone(context: Context, label: String) {
+        val nm = context.getSystemService(NotificationManager::class.java) ?: return
+        nm.createNotificationChannel(
+            NotificationChannel(FOCUS_CHANNEL, "Focus timer", NotificationManager.IMPORTANCE_HIGH)
+        )
+        if (!nm.areNotificationsEnabled()) return
+        val open = PendingIntent.getActivity(
+            context, 0,
+            Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+        val n = Notification.Builder(context, FOCUS_CHANNEL)
+            .setSmallIcon(R.drawable.ic_stat_habit)
+            .setContentTitle("Session complete")
+            .setContentText(if (label.isBlank()) "Take a short break." else label + ". Take a short break.")
+            .setContentIntent(open)
+            .setAutoCancel(true)
+            .build()
+        nm.notify(7001, n)
+    }
+
     fun notifyHabit(context: Context, h: Habit) {
         val nm = context.getSystemService(NotificationManager::class.java) ?: return
         nm.createNotificationChannel(
@@ -141,5 +186,13 @@ class BootReceiver : BroadcastReceiver() {
         if (intent.action != Intent.ACTION_BOOT_COMPLETED) return
         val prefs = context.getSharedPreferences("tasks", Context.MODE_PRIVATE)
         Reminders.sync(context, Reminders.loadHabits(prefs), prefs.getBoolean("remindersOn", true))
+    }
+}
+
+class FocusReceiver : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+        val prefs = context.getSharedPreferences("tasks", Context.MODE_PRIVATE)
+        if (prefs.getInt("timerMode", 0) != 0) return
+        Reminders.notifyFocusDone(context, intent.getStringExtra("label") ?: "")
     }
 }

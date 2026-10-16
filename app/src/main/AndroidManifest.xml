@@ -25,6 +25,10 @@
             android:exported="false" />
 
         <receiver
+            android:name=".FocusReceiver"
+            android:exported="false" />
+
+        <receiver
             android:name=".BootReceiver"
             android:exported="true">
             <intent-filter>
