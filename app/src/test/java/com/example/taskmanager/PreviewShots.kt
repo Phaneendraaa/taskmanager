@@ -23,7 +23,7 @@ import java.io.File
 import java.io.FileOutputStream
 import java.time.LocalDate
 
-/** Renders screens with sample data to build/previews/*.png. Used by CI, not part of the app. */
+/** Renders screens with sample data to PNG files in build/previews. Used by CI, not part of the app. */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(sdk = [34], qualifiers = "w393dp-h852dp-xxhdpi")
