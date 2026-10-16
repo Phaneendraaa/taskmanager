@@ -224,7 +224,7 @@ fun ProfileScreen(
 
         Spacer(Modifier.height(24.dp))
         Txt(
-            "forge 4.0  •  Everything is stored on this phone only.",
+            "forge " + (try { context.packageManager.getPackageInfo(context.packageName, 0).versionName } catch (e: Exception) { "" }) + "  •  Everything is stored on this phone only.",
             Modifier.fillMaxWidth(),
             size = 12.sp,
             color = p.muted

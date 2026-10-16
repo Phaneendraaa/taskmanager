@@ -55,10 +55,11 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           cp app/build/outputs/apk/debug/app-debug.apk TaskManager.apk
+          cp TaskManager.apk "TaskManager-5.0.${{ github.run_number }}.apk"
           gh release delete latest --yes --cleanup-tag || true
-          gh release create latest TaskManager.apk \
-            --title "Latest build" \
-            --notes "Built from commit ${{ github.sha }}" \
+          gh release create latest TaskManager.apk "TaskManager-5.0.${{ github.run_number }}.apk" \
+            --title "Latest build 5.0.${{ github.run_number }}" \
+            --notes "Build 5.0.${{ github.run_number }} from commit ${{ github.sha }}. If your phone downloads an older file, use the numbered APK: it has a new name every build." \
             --target "${{ github.sha }}"
 
       # Renders the main screens to PNG files and publishes them on the "previews" branch,

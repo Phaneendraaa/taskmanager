@@ -12,8 +12,10 @@ android {
         applicationId = "com.example.taskmanager"
         minSdk = 26
         targetSdk = 35
-        versionCode = 5
-        versionName = "5.0"
+        // CI passes the run number, so every build is newer than the last and installs as an update.
+        val run = (System.getenv("GITHUB_RUN_NUMBER") ?: "0").toIntOrNull() ?: 0
+        versionCode = 100 + run
+        versionName = "5.0.$run"
     }
 
     // Fixed debug key so every build is signed the same and installs as an update.
