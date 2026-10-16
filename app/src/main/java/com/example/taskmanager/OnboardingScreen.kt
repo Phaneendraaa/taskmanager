@@ -1,6 +1,14 @@
 package com.example.taskmanager
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -176,7 +184,7 @@ private val TOUR = listOf(
     )
 )
 
-private val PAGES = listOf("welcome", "name", "why", "identity", "dropoff", "wake", "energy", "tour", "starter")
+private val PAGES = listOf("welcome", "name", "why", "identity", "dropoff", "wake", "energy", "tour", "starter", "first")
 
 @Composable
 fun OnboardingScreen(vm: AppViewModel) {
@@ -190,6 +198,13 @@ fun OnboardingScreen(vm: AppViewModel) {
     var dropoff by remember { mutableStateOf<String?>(null) }
     val picked = remember { mutableStateListOf<Int>() }
     var tourStep by remember { mutableIntStateOf(0) }
+    var firstWin by remember { mutableStateOf("") }
+    var remind by remember { mutableStateOf(true) }
+    val context = LocalContext.current
+    val notifPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        remind = granted
+        vm.updateReminders(granted)
+    }
     val last = PAGES.size - 1
 
     val plan = buildPlan(WAKE_MINUTES[wake], goals.toList(), ENERGY_MINUTES[energy], 6)
@@ -205,6 +220,11 @@ fun OnboardingScreen(vm: AppViewModel) {
         val idPhrase = IDENTITIES.firstOrNull { it.key == identity }?.phrase ?: ""
         vm.updateIdentity(idPhrase)
         vm.updateDropoff(dropoff ?: "")
+        if (firstWin.isNotBlank()) {
+            val id = vm.newId()
+            vm.upsertTask(Task(id = id, title = firstWin.trim().take(80), dueDay = today, priority = 3))
+            vm.togglePriority(today, id)
+        }
         picked.sorted().forEach { i ->
             val s = plan.getOrNull(i) ?: return@forEach
             val x = extras(s.name)
@@ -316,6 +336,63 @@ fun OnboardingScreen(vm: AppViewModel) {
                             val c = TOUR[tourStep]
                             Step(c.title, c.what) { TourBody(c, tourStep, TOUR.size) }
                         }
+                        "first" -> Step(
+                            "Your first win starts today",
+                            "Come back tomorrow. Two minutes in the morning and twenty seconds at night is the whole system."
+                        ) {
+                            Column(Modifier.fillMaxWidth().cardStyle(p).padding(16.dp)) {
+                                Txt("What is one thing you will do today?", size = 14.sp, weight = FontWeight.SemiBold)
+                                Spacer(Modifier.height(10.dp))
+                                Box(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(p.field).padding(horizontal = 14.dp, vertical = 13.dp)) {
+                                    PlainField(firstWin, { firstWin = it.take(80) }, "Optional, e.g. finish chapter 3", singleLine = true, size = 15.sp)
+                                }
+                                Spacer(Modifier.height(8.dp))
+                                Txt("It becomes your first priority on Today.", size = 12.sp, color = p.muted)
+                            }
+                            Row(
+                                Modifier.fillMaxWidth().cardStyle(p).padding(start = 16.dp, end = 12.dp, top = 12.dp, bottom = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(Modifier.weight(1f)) {
+                                    Txt("Gentle reminders", size = 15.sp, weight = FontWeight.SemiBold)
+                                    Txt("A morning plan and an evening check", size = 12.sp, color = p.muted, maxLines = 1)
+                                }
+                                Switch(
+                                    checked = remind,
+                                    onCheckedChange = { on ->
+                                        if (on && Build.VERSION.SDK_INT >= 33 &&
+                                            context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+                                        ) {
+                                            notifPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                        } else {
+                                            remind = on
+                                            vm.updateReminders(on)
+                                        }
+                                    },
+                                    colors = SwitchDefaults.colors(
+                                        checkedTrackColor = p.accent,
+                                        checkedThumbColor = Color.White,
+                                        uncheckedTrackColor = p.faint,
+                                        uncheckedThumbColor = Color.White,
+                                        uncheckedBorderColor = p.faint
+                                    )
+                                )
+                            }
+                            Column(Modifier.fillMaxWidth().cardStyle(p).padding(16.dp)) {
+                                Txt("A NOTE FOR YOU", size = 11.sp, weight = FontWeight.SemiBold, color = p.accentText)
+                                Spacer(Modifier.height(6.dp))
+                                Txt(
+                                    when (dropoff) {
+                                        "early" -> "The first week is the hard part. Keep it tiny and show up, even for one minute."
+                                        "busy" -> "Busy days are what the minimum version is for. Do the small thing and the day still counts."
+                                        "boring" -> "When it stops feeling new, open Insights. Watching your consistency climb becomes the reward."
+                                        "never" -> "Your only job today is the first step. We made it small on purpose."
+                                        else -> "Small, repeated actions beat big bursts. Show up tomorrow."
+                                    },
+                                    size = 14.sp, lineHeight = 20.sp
+                                )
+                            }
+                        }
                         else -> Step(
                             "Start small, or start clean",
                             "One to three habits is plenty. Nothing is added unless you tick it."
@@ -337,10 +414,13 @@ fun OnboardingScreen(vm: AppViewModel) {
                     GradientButton(
                         text = when {
                             PAGES[current] == "tour" -> if (tourStep < TOUR.size - 1) "Next" else "Got it"
-                            current != last -> "Continue"
-                            picked.isEmpty() -> "Start with a clean slate"
-                            picked.size == 1 -> "Begin with 1 habit"
-                            else -> "Begin with ${picked.size} habits"
+                            PAGES[current] == "first" -> "Enter forge"
+                            PAGES[current] == "starter" -> when (picked.size) {
+                                0 -> "Continue with a clean slate"
+                                1 -> "Continue with 1 habit"
+                                else -> "Continue with ${picked.size} habits"
+                            }
+                            else -> "Continue"
                         },
                         onClick = {
                             if (current == last) finish()
