@@ -73,8 +73,19 @@ data class Habit(
     val timeMinute: Int? = null,
     val daysMask: Int = 127,
     val icon: String = "",
-    val reminder: Boolean = false
+    val reminder: Boolean = false,
+    /** Anchor in the form "After I ___": the existing routine this habit is attached to. */
+    val cue: String = "",
+    /** The tiny version for bad days. Doing it still counts as showing up. */
+    val minimum: String = "",
+    /** Who this habit makes you, e.g. "a person who reads every day". */
+    val identity: String = "",
+    /** Days (subset of doneDays) where only the minimum version was done. */
+    val miniDays: Set<Long> = emptySet()
 )
+
+/** One evening check-in: how the day went (1..5) and an optional note. */
+data class DayReview(val day: Long, val rating: Int, val note: String)
 
 data class FocusSession(val endedAt: Long, val minutes: Int, val label: String)
 
@@ -301,3 +312,59 @@ fun fileKind(att: Attachment): String {
 fun stampOf(millis: Long): String =
     Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault())
         .format(DateTimeFormatter.ofPattern("d MMM yyyy, h:mm a", Locale.getDefault()))
+
+// ---------- Consistency (research based: one miss never breaks the chain, two in a row do) ----------
+
+/**
+ * Streak that forgives a single missed due day ("never miss twice").
+ * Counts completed days; a lone miss is skipped, two missed due days in a row end the run.
+ */
+fun Habit.graceStreak(today: Long): Int {
+    var d = today
+    if (isDue(d) && d !in doneDays) d--
+    var n = 0
+    var misses = 0
+    var guard = 0
+    while (guard < 4000 && d >= createdDay) {
+        guard++
+        if (!isDue(d)) { d--; continue }
+        if (d in doneDays) { n++; misses = 0 } else {
+            misses++
+            if (misses >= 2) break
+        }
+        d--
+    }
+    return n
+}
+
+/** True when the last due day before today was missed, so today is the day not to miss twice. */
+fun Habit.atRisk(today: Long): Boolean {
+    if (!isDue(today) || today in doneDays) return false
+    var d = today - 1
+    var guard = 0
+    while (guard < 14 && d >= createdDay) {
+        guard++
+        if (isDue(d)) return d !in doneDays
+        d--
+    }
+    return false
+}
+
+/** Consistency over the last 30 days as percent of due days showed up. */
+fun Habit.consistency(today: Long): Int = rate(today, 30)
+
+/** A habit becomes automatic after 66 days with at least 85 percent of due days done. */
+fun Habit.isAutomatic(today: Long): Boolean =
+    today - createdDay + 1 >= 66 && rate(today, 66) >= 85
+
+/** Days since the habit was created, capped at 66, as a fraction on the road to automatic. */
+fun Habit.automaticProgress(today: Long): Float =
+    ((today - createdDay + 1).coerceAtLeast(0) / 66f).coerceAtMost(1f)
+
+/** The sentence shown for the cue, e.g. "After I brush my teeth, I will read 10 pages." */
+fun Habit.cueSentence(): String? {
+    val c = cue.trim().trimEnd('.')
+    if (c.isEmpty()) return null
+    val base = if (c.startsWith("after", ignoreCase = true)) c else "After I $c"
+    return "$base, I will ${name.replaceFirstChar { it.lowercase() }}."
+}

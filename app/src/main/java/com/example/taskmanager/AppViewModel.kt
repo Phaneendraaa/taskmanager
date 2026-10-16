@@ -23,6 +23,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     val tasks = mutableStateListOf<Task>()
     val habits = mutableStateListOf<Habit>()
     val focusSessions = mutableStateListOf<FocusSession>()
+    val reviews = mutableStateListOf<DayReview>()
+    /** Task ids picked as "today's three", per epoch day. */
+    val priorities = androidx.compose.runtime.mutableStateMapOf<Long, List<String>>()
 
     var onboarded by mutableStateOf(prefs.getBoolean("onboarded", false))
         private set
@@ -70,6 +73,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     init {
         tasks.addAll(loadTasks())
         habits.addAll(loadHabits())
+        loadPlanning()
         focusSessions.addAll(loadFocus())
         Reminders.sync(getApplication<Application>(), habits, remindersOn)
     }
@@ -150,6 +154,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         tasks.addAll(loadTasks())
         habits.clear()
         habits.addAll(loadHabits())
+        loadPlanning()
         focusSessions.clear()
         focusSessions.addAll(loadFocus())
         themeMode = prefs.getString("theme", "light") ?: "light"
@@ -368,11 +373,21 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         saveHabits()
     }
 
+    /** Marks the tiny version done: it counts as showing up, and is remembered as minimum only. */
+    fun doMinimum(id: String, day: Long) {
+        val i = habits.indexOfFirst { it.id == id }
+        if (i < 0) return
+        val h = habits[i]
+        habits[i] = h.copy(doneDays = h.doneDays + day, miniDays = h.miniDays + day)
+        saveHabits()
+    }
+
     fun toggleHabitDay(id: String, day: Long) {
         val i = habits.indexOfFirst { it.id == id }
         if (i < 0) return
         val h = habits[i]
-        habits[i] = h.copy(doneDays = if (day in h.doneDays) h.doneDays - day else h.doneDays + day)
+        habits[i] = if (day in h.doneDays) h.copy(doneDays = h.doneDays - day, miniDays = h.miniDays - day)
+        else h.copy(doneDays = h.doneDays + day)
         saveHabits()
     }
 
@@ -514,6 +529,12 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             o.put("daysMask", h.daysMask)
             o.put("icon", h.icon)
             o.put("reminder", h.reminder)
+            o.put("cue", h.cue)
+            o.put("minimum", h.minimum)
+            o.put("identity", h.identity)
+            val mini = JSONArray()
+            h.miniDays.forEach { mini.put(it) }
+            o.put("mini", mini)
             arr.put(o)
         }
         prefs.edit().putString("habits", arr.toString()).apply()
@@ -540,7 +561,14 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                     timeMinute = if (o.has("timeMinute")) o.getInt("timeMinute") else null,
                     daysMask = o.optInt("daysMask", 127),
                     icon = o.optString("icon", ""),
-                    reminder = o.optBoolean("reminder", false)
+                    reminder = o.optBoolean("reminder", false),
+                    cue = o.optString("cue", ""),
+                    minimum = o.optString("minimum", ""),
+                    identity = o.optString("identity", ""),
+                    miniDays = HashSet<Long>().also { s ->
+                        val m = o.optJSONArray("mini")
+                        if (m != null) for (k in 0 until m.length()) s.add(m.getLong(k))
+                    }
                 )
             }
         } catch (e: Exception) {
@@ -558,6 +586,63 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             arr.put(o)
         }
         prefs.edit().putString("focus", arr.toString()).apply()
+    }
+
+    // ---- Today's three and evening reviews ----
+
+    /** Up to three task ids chosen for [day], dropping tasks that no longer exist. */
+    fun prioritiesFor(day: Long): List<String> =
+        (priorities[day] ?: emptyList()).filter { id -> tasks.any { it.id == id } }
+
+    /** Adds or removes a task from the day's three. Returns false when the day already has three. */
+    fun togglePriority(day: Long, taskId: String): Boolean {
+        val cur = prioritiesFor(day)
+        val next = if (taskId in cur) cur - taskId else {
+            if (cur.size >= 3) return false
+            cur + taskId
+        }
+        priorities[day] = next
+        savePlanning()
+        return true
+    }
+
+    fun reviewFor(day: Long): DayReview? = reviews.firstOrNull { it.day == day }
+
+    fun saveReview(day: Long, rating: Int, note: String) {
+        reviews.removeAll { it.day == day }
+        reviews.add(DayReview(day, rating.coerceIn(1, 5), note.trim()))
+        savePlanning()
+    }
+
+    private fun savePlanning() {
+        val po = JSONObject()
+        val keep = LocalDate.now().toEpochDay() - 120
+        priorities.forEach { (d, ids) -> if (d >= keep && ids.isNotEmpty()) po.put(d.toString(), JSONArray(ids)) }
+        val ra = JSONArray()
+        reviews.sortedBy { it.day }.takeLast(400).forEach { r ->
+            ra.put(JSONObject().put("day", r.day).put("rating", r.rating).put("note", r.note))
+        }
+        prefs.edit().putString("priorities", po.toString()).putString("reviews", ra.toString()).apply()
+    }
+
+    private fun loadPlanning() {
+        priorities.clear()
+        reviews.clear()
+        try {
+            val po = JSONObject(prefs.getString("priorities", "{}") ?: "{}")
+            val keys = po.keys()
+            while (keys.hasNext()) {
+                val k = keys.next()
+                val arr = po.getJSONArray(k)
+                priorities[k.toLong()] = (0 until arr.length()).map { arr.getString(it) }
+            }
+            val ra = JSONArray(prefs.getString("reviews", "[]") ?: "[]")
+            for (i in 0 until ra.length()) {
+                val o = ra.getJSONObject(i)
+                reviews.add(DayReview(o.getLong("day"), o.getInt("rating"), o.optString("note", "")))
+            }
+        } catch (e: Exception) {
+        }
     }
 
     private fun loadFocus(): List<FocusSession> {
