@@ -18,8 +18,8 @@ TODO = not started
 | 4 | Task detail (chips, info, sub-tasks, attachments, Mark as Complete, undo delete) | DONE |
 | 5 | Calendar (month grid with task dots, day list) | DONE |
 | 6 | Progress (Week/Month/Year, ring, stats, daily goal, tasks by category) | DONE |
-| 7 | Profile and Habits (theme, daily goal, name, daily habits with streaks) | PUSHED |
-| 8 | Final polish, README, release check | TODO |
+| 7 | Profile and Habits (theme, daily goal, name, daily habits with streaks) | DONE |
+| 8 | Final polish, README, release check | PUSHED |
 
 ## Part details
 
@@ -58,11 +58,14 @@ TODO = not started
   on Home), completion ring with percent, Completed / Pending / Overdue counts, Daily Goal bar,
   Tasks by Category donut with legend
 
-### 7. Profile and Habits (PUSHED)
+### 7. Profile and Habits (DONE)
 - `ProfileScreen.kt`: name, completed / streak / habit counts, Light / Dark / System, daily goal
   stepper, link to habits, clear completed
 - `HabitsScreen.kt`: add habits, tick today, streak, best streak, 30 day rate, heatmap, undo delete
 - Habits open from the Home menu and from Profile
+
+### 8. Final polish (PUSHED)
+- Version 3.0, README rewritten for the new app
 
 ### Notes
 - Everything is stored on the device only.

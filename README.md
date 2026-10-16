@@ -1,43 +1,22 @@
 # Task Manager
 
-Minimal black-and-white task and habit tracker for Android (Kotlin + Jetpack Compose).
-Fully offline: everything is stored on the device.
+A task manager for Android built with Kotlin and Jetpack Compose. Works fully offline;
+everything is stored on the phone.
+
+**Install:** https://github.com/Phaneendraaa/taskmanager/releases/download/latest/TaskManager.apk
 
 ## Features
+- **Home**: greeting, date strip, category filters, today's tasks, overdue and anytime sections, search
+- **Create / edit task**: title, notes (with voice input), date, start and end time, repeat,
+  category, priority, sub-tasks, file attachments
+- **Task detail**: sub-task progress, attachments, Mark as Complete, duplicate, delete with Undo
+- **Calendar**: month view with category dots and a list for the selected day
+- **Progress**: Week / Month / Year, completion ring, pending and overdue counts, daily goal,
+  tasks by category
+- **Profile**: name, light / dark / system theme, daily goal, clear completed
+- **Daily habits**: tick each day, streaks, 30 day rate, heatmap
+- Repeating tasks create their next occurrence when completed
 
-**Tasks**
-- Title, notes, "done by" date and optional time, priority (none / low / medium / high)
-- Grouped by Overdue, Today, Tomorrow, Upcoming, Anytime
-- Filters: All, Today, Overdue, Done
-- Overdue detection (including a missed time today), today's progress bar
-- Edit, delete with undo, clear completed, created / completed timestamps
-
-**Habits**
-- Daily habits shown every day with a one-tap check
-- Current streak, 30-day rate, last-7-days strip (tap a past day to backfill)
-- Detail view with best streak, total days and a 16-week heatmap
-
-**Insights**
-- Completed this week / all time, on-time rate, overdue count
-- 7-day completion chart, weekly habit consistency
-- Light / Dark / System appearance
-
-## Install (no Android Studio)
-
-Every push to `main` builds the APK on GitHub Actions and publishes it to the
-`latest` release:
-
-https://github.com/Phaneendraaa/taskmanager/releases/download/latest/TaskManager.apk
-
-Open it on your phone and tap Install. New builds install over the old one and
-keep your data (the debug signing key is fixed in `app/debug.keystore`).
-
-## Build locally
-
-Needs JDK 17 and the Android SDK (platform 35, build-tools 35.0.0).
-
-```
-./gradlew assembleDebug
-```
-
-APK: `app/build/outputs/apk/debug/app-debug.apk`
+## Build
+Every push to `main` is built by GitHub Actions (`.github/workflows/build-apk.yml`) and the
+APK is published to the `latest` release. See `PROGRESS.md` for how the redesign was split up.
