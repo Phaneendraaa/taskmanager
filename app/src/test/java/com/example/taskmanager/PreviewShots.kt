@@ -2,21 +2,22 @@ package com.example.taskmanager
 
 import android.app.Application
 import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.os.Looper
+import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.asAndroidBitmap
-import androidx.compose.ui.test.captureToImage
-import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import java.io.File
@@ -30,7 +31,7 @@ import java.time.LocalDate
 class PreviewShots {
 
     @get:Rule
-    val rule = createComposeRule()
+    val rule = createAndroidComposeRule<ComponentActivity>()
 
     private fun seeded(): AppViewModel {
         val app = ApplicationProvider.getApplicationContext<Application>()
@@ -73,7 +74,13 @@ class PreviewShots {
             }
         }
         rule.mainClock.advanceTimeBy(600)
-        val bitmap = rule.onRoot().captureToImage().asAndroidBitmap()
+        shadowOf(Looper.getMainLooper()).idle()
+        rule.mainClock.advanceTimeBy(600)
+        shadowOf(Looper.getMainLooper()).idle()
+        // Draw the window directly; waiting for "idle" never finishes while timers are running.
+        val view = rule.activity.window.decorView
+        val bitmap = Bitmap.createBitmap(view.width.coerceAtLeast(1), view.height.coerceAtLeast(1), Bitmap.Config.ARGB_8888)
+        view.draw(Canvas(bitmap))
         val dir = File("build/previews")
         dir.mkdirs()
         FileOutputStream(File(dir, name + (if (dark) "-dark" else "") + ".png")).use {
