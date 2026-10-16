@@ -65,12 +65,14 @@ class PreviewShots {
 
     private fun shot(name: String, dark: Boolean, content: @Composable (AppViewModel) -> Unit) {
         val vm = seeded()
+        // Screens contain endless timers; step the clock by hand instead of waiting for idle.
+        rule.mainClock.autoAdvance = false
         rule.setContent {
             AppTheme(dark) {
                 Box(Modifier.fillMaxSize()) { content(vm) }
             }
         }
-        rule.waitForIdle()
+        rule.mainClock.advanceTimeBy(600)
         val bitmap = rule.onRoot().captureToImage().asAndroidBitmap()
         val dir = File("build/previews")
         dir.mkdirs()
