@@ -16,8 +16,8 @@ Legend: DONE = pushed and the build passed, PUSHED = pushed, build being checked
 | F2 | Onboarding: welcome page and lifestyle questions that build a starter plan | DONE |
 | F3 | Home (5/7 ring, stat chips, Habits / Tasks switch, Today list) and new bottom bar | DONE |
 | F4 | Habits tab (categories, Morning / Afternoon / Evening), Add Habit / Task, Quick Add | DONE |
-| F5 | Habit details (Overview, History, Edit) | PUSHED |
-| F6 | Focus timer (Focus, Short Break, Long Break) | TODO |
+| F5 | Habit details (Overview, History, Edit) | DONE |
+| F6 | Focus timer (Focus, Short Break, Long Break) | PUSHED |
 | F7 | Stats (Overview, Habits, Tasks, Focus, heatmap, categories, focus timeline) | TODO |
 | F8 | Settings, reminders, polish, README, release | TODO |
 

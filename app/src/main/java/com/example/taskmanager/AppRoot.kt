@@ -40,6 +40,7 @@ sealed interface Screen {
     data class NewTask(val day: Long?) : Screen
     data object Habits : Screen
     data object NewHabit : Screen
+    data object Focus : Screen
     data class HabitDetail(val id: String) : Screen
     data class Detail(val id: String) : Screen
     data class EditTask(val id: String) : Screen
@@ -86,7 +87,7 @@ fun AppRoot(vm: AppViewModel) {
                     onOpenTask = { id -> stack.add(Screen.Detail(id)) },
                     onOpenHabit = { id -> stack.add(Screen.HabitDetail(id)) },
                     onOpenHabits = { stack.add(Screen.Habits) },
-                    onOpenFocus = {}
+                    onOpenFocus = { stack.add(Screen.Focus) }
                 )
                 1 -> CalendarScreen(
                     vm = vm,
@@ -143,6 +144,7 @@ fun AppRoot(vm: AppViewModel) {
                         onOpenHabit = { id -> stack.add(Screen.HabitDetail(id)) },
                         onAdd = { stack.add(Screen.NewHabit) }
                     )
+                    is Screen.Focus -> FocusScreen(vm = vm, onClose = { pop() })
                     is Screen.HabitDetail -> HabitDetail(
                         vm = vm,
                         habitId = top.id,

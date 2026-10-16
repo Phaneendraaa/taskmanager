@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.Context
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -32,6 +33,18 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         private set
     var longLen by mutableIntStateOf(prefs.getInt("longLen", 15))
         private set
+
+    // Focus timer. It lives here so it keeps running while other screens are open.
+    /** 0 = focus, 1 = short break, 2 = long break. */
+    var focusMode by mutableIntStateOf(0)
+        private set
+    var timerRunning by mutableStateOf(false)
+        private set
+    var timerEndAt by mutableLongStateOf(0L)
+        private set
+    var timerLeftMs by mutableLongStateOf(prefs.getInt("focusLen", 25) * 60_000L)
+        private set
+    var focusLabel by mutableStateOf("")
 
     var themeMode by mutableStateOf(prefs.getString("theme", "light") ?: "light")
         private set
@@ -90,6 +103,50 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         shortLen = short.coerceIn(1, 30)
         longLen = long.coerceIn(5, 60)
         prefs.edit().putInt("focusLen", focusLen).putInt("shortLen", shortLen).putInt("longLen", longLen).apply()
+        if (!timerRunning) timerLeftMs = lenOf(focusMode) * 60_000L
+    }
+
+    fun lenOf(mode: Int): Int = when (mode) {
+        0 -> focusLen
+        1 -> shortLen
+        else -> longLen
+    }
+
+    fun timerRemainingMs(nowMs: Long): Long =
+        if (timerRunning) (timerEndAt - nowMs).coerceAtLeast(0L) else timerLeftMs
+
+    fun startTimer() {
+        if (timerRunning) return
+        timerEndAt = System.currentTimeMillis() + timerLeftMs
+        timerRunning = true
+    }
+
+    fun pauseTimer() {
+        if (!timerRunning) return
+        timerLeftMs = timerRemainingMs(System.currentTimeMillis())
+        timerRunning = false
+    }
+
+    fun selectMode(mode: Int) {
+        timerRunning = false
+        focusMode = mode
+        timerLeftMs = lenOf(mode) * 60_000L
+    }
+
+    fun resetTimer() = selectMode(focusMode)
+
+    /** Call on every tick. Returns true when a session just ended. */
+    fun completeIfDone(): Boolean {
+        if (!timerRunning || timerEndAt > System.currentTimeMillis()) return false
+        timerRunning = false
+        if (focusMode == 0) {
+            logFocus(focusLen, focusLabel.ifBlank { "Focus" })
+            val doneToday = focusSessions.count { epochDayOf(it.endedAt) == LocalDate.now().toEpochDay() }
+            selectMode(if (doneToday % 4 == 0) 2 else 1)
+        } else {
+            selectMode(0)
+        }
+        return true
     }
 
     fun logFocus(minutes: Int, label: String) {
