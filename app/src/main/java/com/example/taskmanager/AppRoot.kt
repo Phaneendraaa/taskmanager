@@ -38,9 +38,8 @@ import kotlinx.coroutines.delay
 /** Full-screen pages that open on top of the tabs. */
 sealed interface Screen {
     data class NewTask(val day: Long?) : Screen
-    data object Habits : Screen
+    data object Settings : Screen
     data object NewHabit : Screen
-    data object Focus : Screen
     data class HabitDetail(val id: String) : Screen
     data class Detail(val id: String) : Screen
     data class EditTask(val id: String) : Screen
@@ -50,7 +49,7 @@ sealed interface Screen {
 fun AppRoot(vm: AppViewModel) {
     val p = LocalPalette.current
     var tab by rememberSaveable { mutableIntStateOf(0) }
-    var addMode by rememberSaveable { mutableIntStateOf(0) }
+    var addMode by rememberSaveable { mutableIntStateOf(1) }
     val stack = remember { mutableStateListOf<Screen>() }
     val today = vm.now.toLocalDate().toEpochDay()
     val snackbar = remember { SnackbarHostState() }
@@ -77,7 +76,7 @@ fun AppRoot(vm: AppViewModel) {
             contentWindowInsets = WindowInsets(0.dp, 0.dp, 0.dp, 0.dp),
             snackbarHost = { SnackbarHost(snackbar) },
             bottomBar = {
-                FloatingNav(tab, { tab = it }, onAdd = { stack.add(if (addMode == 0) Screen.NewHabit else Screen.NewTask(vm.selectedDay)) })
+                BottomTabs(tab) { tab = it }
             }
         ) { padding ->
             when (tab) {
@@ -86,24 +85,25 @@ fun AppRoot(vm: AppViewModel) {
                     padding = padding,
                     onOpenTask = { id -> stack.add(Screen.Detail(id)) },
                     onOpenHabit = { id -> stack.add(Screen.HabitDetail(id)) },
-                    onOpenHabits = { stack.add(Screen.Habits) },
-                    onOpenFocus = { stack.add(Screen.Focus) }
+                    onOpenHabits = { tab = 1 },
+                    onOpenFocus = { tab = 2 },
+                    onOpenSettings = { stack.add(Screen.Settings) }
                 )
-                1 -> CalendarScreen(
-                    vm = vm,
-                    padding = padding,
-                    onOpenTask = { id -> stack.add(Screen.Detail(id)) }
-                )
-                2 -> StatsScreen(
+                1 -> Box(Modifier.padding(bottom = padding.calculateBottomPadding())) {
+                    HabitsScreen(
+                        vm = vm,
+                        onBack = null,
+                        onOpenHabit = { id -> stack.add(Screen.HabitDetail(id)) },
+                        onAdd = { stack.add(Screen.NewHabit) }
+                    )
+                }
+                2 -> Box(Modifier.padding(bottom = padding.calculateBottomPadding())) {
+                    FocusScreen(vm = vm, onClose = null)
+                }
+                else -> StatsScreen(
                     vm = vm,
                     padding = padding,
                     onPickDay = { day -> vm.selectedDay = day; tab = 0 }
-                )
-                else -> ProfileScreen(
-                    vm = vm,
-                    padding = padding,
-                    onOpenHabits = { stack.add(Screen.Habits) },
-                    onOpenFocus = { stack.add(Screen.Focus) }
                 )
             }
         }
@@ -139,13 +139,13 @@ fun AppRoot(vm: AppViewModel) {
                             stack[stack.lastIndex] = Screen.NewHabit
                         }
                     )
-                    is Screen.Habits -> HabitsScreen(
+                    is Screen.Settings -> ProfileScreen(
                         vm = vm,
-                        onBack = { pop() },
-                        onOpenHabit = { id -> stack.add(Screen.HabitDetail(id)) },
-                        onAdd = { stack.add(Screen.NewHabit) }
+                        padding = PaddingValues(0.dp),
+                        onOpenHabits = { stack.clear(); tab = 1 },
+                        onOpenFocus = { stack.clear(); tab = 2 },
+                        onBack = { pop() }
                     )
-                    is Screen.Focus -> FocusScreen(vm = vm, onClose = { pop() })
                     is Screen.HabitDetail -> HabitDetail(
                         vm = vm,
                         habitId = top.id,

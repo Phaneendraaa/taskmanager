@@ -6,7 +6,7 @@ Each part is pushed on its own and built by GitHub Actions.
 Install the latest build:
 https://github.com/Phaneendraaa/taskmanager/releases/download/latest/TaskManager.apk
 
-Legend: DONE = pushed and the build passed, PUSHED = pushed, build being checked, TODO = not started
+Legend: DONE = pushed and the build passed, DONE = pushed, build being checked, TODO = not started
 
 | # | Part | Status |
 |---|------|--------|

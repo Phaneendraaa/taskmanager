@@ -90,8 +90,8 @@ class PreviewShots {
 
     @Test fun app_light() = shot("app", false) { AppRoot(it) }
     @Test fun app_dark() = shot("app", true) { AppRoot(it) }
-    @Test fun habits_light() = shot("habits", false) { HabitsScreen(it, {}, {}, {}) }
+    @Test fun habits_light() = shot("habits", false) { HabitsScreen(it, null, {}, {}) }
     @Test fun stats_light() = shot("stats", false) { StatsScreen(it, PaddingValues(0.dp)) {} }
     @Test fun settings_light() = shot("settings", false) { ProfileScreen(it, PaddingValues(0.dp), {}, {}) }
-    @Test fun focus_dark() = shot("focus", true) { FocusScreen(it) {} }
+    @Test fun focus_dark() = shot("focus", true) { FocusScreen(it, null) }
 }

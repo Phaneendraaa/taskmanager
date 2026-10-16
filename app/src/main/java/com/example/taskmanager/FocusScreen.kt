@@ -62,7 +62,7 @@ private fun beep() {
 }
 
 @Composable
-fun FocusScreen(vm: AppViewModel, onClose: () -> Unit) {
+fun FocusScreen(vm: AppViewModel, onClose: (() -> Unit)?) {
     val p = LocalPalette.current
     val today = vm.now.toLocalDate().toEpochDay()
     var nowMs by remember { mutableLongStateOf(System.currentTimeMillis()) }
@@ -103,7 +103,7 @@ fun FocusScreen(vm: AppViewModel, onClose: () -> Unit) {
             Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            RoundIconButton(Ic.CLOSE, onClick = onClose, bordered = false, bg = Color.Transparent)
+            if (onClose != null) RoundIconButton(Ic.CLOSE, onClick = onClose, bordered = false, bg = Color.Transparent)
             Spacer(Modifier.weight(1f))
             RoundIconButton(Ic.SLIDERS, onClick = { settings = true }, bordered = false, bg = Color.Transparent)
         }

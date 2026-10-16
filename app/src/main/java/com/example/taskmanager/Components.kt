@@ -81,15 +81,10 @@ fun Txt(
     )
 }
 
-/** Rounded surface with a hairline border and (in light mode) a soft violet shadow. */
-fun Modifier.cardStyle(p: Palette, radius: Dp = 18.dp): Modifier {
-    val shape = RoundedCornerShape(radius)
-    val base = if (p.dark) {
-        this
-    } else {
-        this.shadow(3.dp, shape, clip = false, ambientColor = Color(0x223F6B53), spotColor = Color(0x223F6B53))
-    }
-    return base
+/** Flat surface with a hairline border. Radius is capped so every card looks the same family. */
+fun Modifier.cardStyle(p: Palette, radius: Dp = 16.dp): Modifier {
+    val shape = RoundedCornerShape(minOf(radius, 16.dp))
+    return this
         .background(p.card, shape)
         .border(1.dp, p.cardBorder, shape)
         .clip(shape)
@@ -124,8 +119,8 @@ fun CheckCircle(
             modifier = Modifier
                 .size(diameter)
                 .clip(CircleShape)
-                .background(if (checked) StatusGreen else Color.Transparent)
-                .border(1.6.dp, if (checked) StatusGreen else p.muted.copy(alpha = 0.55f), CircleShape),
+                .background(if (checked) p.accent else Color.Transparent)
+                .border(1.5.dp, if (checked) p.accent else p.muted.copy(alpha = 0.5f), CircleShape),
             contentAlignment = Alignment.Center
         ) {
             if (checked) {
@@ -166,12 +161,12 @@ fun GradientButton(
     modifier: Modifier = Modifier,
     icon: Ic? = null,
     enabled: Boolean = true,
-    height: Dp = 56.dp,
-    textSize: TextUnit = 17.sp
+    height: Dp = 52.dp,
+    textSize: TextUnit = 16.sp
 ) {
     val p = LocalPalette.current
-    val shape = RoundedCornerShape(50)
-    val brush: Brush = if (enabled) p.gradient else SolidColor(p.faint)
+    val shape = RoundedCornerShape(14.dp)
+    val brush: Brush = if (enabled) SolidColor(p.inverse) else SolidColor(p.faint)
     Row(
         modifier = modifier
             .height(height)
@@ -182,10 +177,10 @@ fun GradientButton(
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Txt(text, size = textSize, weight = FontWeight.SemiBold, color = if (enabled) Color.White else p.muted)
+        Txt(text, size = textSize, weight = FontWeight.SemiBold, color = if (enabled) p.onInverse else p.muted)
         if (icon != null) {
             Spacer(Modifier.width(8.dp))
-            AppIcon(icon, if (enabled) Color.White else p.muted, size = 20.dp, stroke = 2.2f)
+            AppIcon(icon, if (enabled) p.onInverse else p.muted, size = 20.dp, stroke = 2.2f)
         }
     }
 }
@@ -197,7 +192,7 @@ fun Avatar(name: String, onClick: () -> Unit, modifier: Modifier = Modifier, siz
         modifier = modifier
             .size(size)
             .clip(CircleShape)
-            .background(p.gradient)
+            .background(p.inverse)
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
@@ -205,11 +200,12 @@ fun Avatar(name: String, onClick: () -> Unit, modifier: Modifier = Modifier, siz
             Txt(
                 name.trim().take(1).uppercase(),
                 size = (size.value * 0.42f).sp,
-                weight = FontWeight.Bold,
-                color = Color.White
+                weight = FontWeight.SemiBold,
+                color = p.onInverse,
+                serif = true
             )
         } else {
-            AppIcon(Ic.PERSON, Color.White, size = size * 0.5f)
+            AppIcon(Ic.PERSON, p.onInverse, size = size * 0.5f)
         }
     }
 }
@@ -224,27 +220,25 @@ fun CategoryChip(
 ) {
     val p = LocalPalette.current
     val shape = RoundedCornerShape(50)
-    val isAll = icon == null
-    val bg = if (isAll) {
-        if (selected) p.inverse else p.field
-    } else {
-        color.copy(alpha = if (selected) 0.28f else 0.13f)
-    }
-    val fg = if (isAll && selected) p.onInverse else p.text
     Row(
         modifier = Modifier
             .clip(shape)
-            .background(bg)
-            .then(if (!isAll && selected) Modifier.border(1.dp, color, shape) else Modifier)
+            .background(if (selected) p.inverse else p.field)
             .clickable(onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         if (icon != null) {
-            AppIcon(icon, color, size = 18.dp, filled = true)
+            AppIcon(icon, if (selected) p.onInverse else p.muted, size = 17.dp)
             Spacer(Modifier.width(8.dp))
         }
-        Txt(label, size = 14.sp, weight = FontWeight.Medium, color = fg)
+        Txt(
+            label,
+            size = 14.sp,
+            weight = FontWeight.Medium,
+            color = if (selected) p.onInverse else p.text,
+            maxLines = 1
+        )
     }
 }
 
@@ -252,7 +246,7 @@ fun CategoryChip(
 fun GradientProgress(fraction: Float, modifier: Modifier = Modifier, height: Dp = 8.dp, brush: Brush? = null) {
     val p = LocalPalette.current
     val animated by animateFloatAsState(targetValue = fraction.coerceIn(0f, 1f), label = "progress")
-    val fill: Brush = brush ?: Brush.horizontalGradient(listOf(p.accent2, p.accent, Color(0xFF8DB596)))
+    val fill: Brush = brush ?: SolidColor(p.accent)
     val shape = RoundedCornerShape(50)
     Box(
         modifier
@@ -274,22 +268,23 @@ fun GradientProgress(fraction: Float, modifier: Modifier = Modifier, height: Dp 
 @Composable
 fun SegmentedControl(options: List<String>, selected: Int, onSelect: (Int) -> Unit, modifier: Modifier = Modifier) {
     val p = LocalPalette.current
-    val shape = RoundedCornerShape(50)
+    val outer = RoundedCornerShape(12.dp)
+    val inner = RoundedCornerShape(9.dp)
     Row(
         modifier
             .fillMaxWidth()
-            .clip(shape)
+            .clip(outer)
             .background(p.field)
-            .border(1.dp, p.cardBorder, shape)
-            .padding(4.dp)
+            .padding(3.dp)
     ) {
         options.forEachIndexed { i, label ->
             val on = i == selected
             Box(
                 Modifier
                     .weight(1f)
-                    .clip(shape)
-                    .background(if (on) p.inverse else Color.Transparent)
+                    .clip(inner)
+                    .background(if (on) p.card else Color.Transparent)
+                    .then(if (on) Modifier.border(1.dp, p.cardBorder, inner) else Modifier)
                     .clickable { onSelect(i) }
                     .padding(vertical = 10.dp),
                 contentAlignment = Alignment.Center
@@ -298,7 +293,8 @@ fun SegmentedControl(options: List<String>, selected: Int, onSelect: (Int) -> Un
                     label,
                     size = 14.sp,
                     weight = if (on) FontWeight.SemiBold else FontWeight.Medium,
-                    color = if (on) p.onInverse else p.text
+                    color = if (on) p.text else p.muted,
+                    maxLines = 1
                 )
             }
         }

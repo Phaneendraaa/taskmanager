@@ -46,7 +46,8 @@ fun HomeScreen(
     onOpenTask: (String) -> Unit,
     onOpenHabit: (String) -> Unit,
     onOpenHabits: () -> Unit,
-    onOpenFocus: () -> Unit
+    onOpenFocus: () -> Unit,
+    onOpenSettings: () -> Unit = {}
 ) {
     val p = LocalPalette.current
     val now = vm.now
@@ -167,6 +168,10 @@ fun HomeScreen(
                                 DropdownMenuItem(text = { Text("Focus timer") }, onClick = {
                                     menuOpen = false
                                     onOpenFocus()
+                                })
+                                DropdownMenuItem(text = { Text("Settings") }, onClick = {
+                                    menuOpen = false
+                                    onOpenSettings()
                                 })
                                 DropdownMenuItem(text = { Text("Clear completed tasks") }, onClick = {
                                     menuOpen = false

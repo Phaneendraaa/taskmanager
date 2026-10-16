@@ -37,7 +37,7 @@ import androidx.compose.ui.unit.sp
 @Composable
 fun HabitsScreen(
     vm: AppViewModel,
-    onBack: () -> Unit,
+    onBack: (() -> Unit)?,
     onOpenHabit: (String) -> Unit,
     onAdd: () -> Unit
 ) {
@@ -59,8 +59,10 @@ fun HabitsScreen(
             Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            RoundIconButton(Ic.BACK, onClick = onBack)
-            Spacer(Modifier.size(14.dp))
+            if (onBack != null) {
+                RoundIconButton(Ic.BACK, onClick = onBack)
+                Spacer(Modifier.size(14.dp))
+            }
             Txt("Habits", size = 30.sp, weight = FontWeight.Bold, serif = true, modifier = Modifier.weight(1f))
             Box(
                 Modifier

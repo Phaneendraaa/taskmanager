@@ -54,7 +54,8 @@ fun ProfileScreen(
     vm: AppViewModel,
     padding: PaddingValues,
     onOpenHabits: () -> Unit,
-    onOpenFocus: () -> Unit
+    onOpenFocus: () -> Unit,
+    onBack: (() -> Unit)? = null
 ) {
     val p = LocalPalette.current
     val context = LocalContext.current
@@ -102,7 +103,13 @@ fun ProfileScreen(
             .padding(bottom = padding.calculateBottomPadding() + 16.dp)
     ) {
         Spacer(Modifier.height(16.dp))
-        Txt("Settings", size = 32.sp, weight = FontWeight.Bold, serif = true)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            if (onBack != null) {
+                RoundIconButton(Ic.BACK, onClick = onBack)
+                Spacer(Modifier.width(14.dp))
+            }
+            Txt("Settings", size = 30.sp, weight = FontWeight.Bold, serif = true)
+        }
         Spacer(Modifier.height(18.dp))
 
         Row(
