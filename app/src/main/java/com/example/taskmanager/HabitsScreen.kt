@@ -1,6 +1,8 @@
 package com.example.taskmanager
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -9,21 +11,26 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -31,91 +38,104 @@ import androidx.compose.ui.unit.sp
 fun HabitsScreen(
     vm: AppViewModel,
     onBack: () -> Unit,
-    onDeleted: (Habit) -> Unit
+    onOpenHabit: (String) -> Unit,
+    onAdd: () -> Unit
 ) {
     val p = LocalPalette.current
     val today = vm.now.toLocalDate().toEpochDay()
-    var newName by remember { mutableStateOf("") }
-
-    fun add() {
-        vm.addHabit(newName)
-        newName = ""
-    }
+    // -1 = all, otherwise the HabitCategory ordinal.
+    var filter by rememberSaveable { mutableIntStateOf(-1) }
+    val shown = vm.habits
+        .filter { filter < 0 || it.category.ordinal == filter }
+        .sortedWith(compareBy({ it.timeMinute ?: Int.MAX_VALUE }, { it.name }))
 
     Column(
         Modifier
             .fillMaxSize()
-            .background(p.bg)
-            .systemBarsPadding()
-            .imePadding()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp)
+            .background(Brush.verticalGradient(listOf(p.glow, p.bg, p.bg)))
+            .statusBarsPadding()
     ) {
-        Spacer(Modifier.height(12.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            RoundIconButton(Ic.BACK, onClick = onBack)
-            Spacer(Modifier.size(14.dp))
-            Column {
-                Txt("Daily habits", size = 24.sp, weight = FontWeight.ExtraBold)
-                val doneNow = vm.habits.count { today in it.doneDays }
-                Txt("$doneNow of ${vm.habits.size} done today", size = 13.sp, color = p.muted)
-            }
-        }
-        Spacer(Modifier.height(18.dp))
-
         Row(
-            Modifier.fillMaxWidth().cardStyle(p, 20.dp).padding(start = 16.dp, end = 6.dp, top = 6.dp, bottom = 6.dp),
+            Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            PlainField(
-                value = newName,
-                onValueChange = { newName = it },
-                placeholder = "New habit, e.g. Read 20 pages",
-                modifier = Modifier.weight(1f),
-                singleLine = true,
-                imeAction = ImeAction.Done,
-                onDone = { add() }
-            )
-            RoundIconButton(Ic.PLUS, onClick = { add() }, bg = p.field, tint = p.accent)
-        }
-        Spacer(Modifier.height(16.dp))
-
-        if (vm.habits.isEmpty()) {
-            Spacer(Modifier.height(30.dp))
-            Txt(
-                "Habits repeat every day. Add one above and tick it off each day to build a streak.",
-                size = 14.sp,
-                color = p.muted
-            )
+            RoundIconButton(Ic.BACK, onClick = onBack)
+            Spacer(Modifier.size(14.dp))
+            Txt("Habits", size = 30.sp, weight = FontWeight.Bold, serif = true, modifier = Modifier.weight(1f))
+            Box(
+                Modifier
+                    .size(44.dp)
+                    .clip(CircleShape)
+                    .background(p.accent)
+                    .clickable(onClick = onAdd),
+                contentAlignment = Alignment.Center
+            ) { AppIcon(Ic.PLUS, Color.White, size = 24.dp, stroke = 2.4f) }
         }
 
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            vm.habits.forEach { h ->
-                Column(Modifier.fillMaxWidth().cardStyle(p, 22.dp).padding(16.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        CheckCircle(today in h.doneDays, onClick = { vm.toggleHabitDay(h.id, today) })
-                        Spacer(Modifier.size(8.dp))
-                        Column(Modifier.weight(1f)) {
-                            Txt(h.name, size = 16.sp, weight = FontWeight.SemiBold)
-                            Txt(
-                                "${h.currentStreak(today)} day streak  •  best ${h.bestStreak()}  •  ${h.rate(today)}% this month",
-                                size = 12.sp,
-                                color = p.muted
-                            )
-                        }
-                        RoundIconButton(
-                            Ic.TRASH,
-                            onClick = { vm.deleteHabit(h.id)?.let(onDeleted) },
-                            size = 38.dp,
-                            tint = p.muted,
-                            bordered = false
-                        )
-                    }
-                    Spacer(Modifier.height(12.dp))
-                    Heatmap(h.doneDays, today)
-                }
+        Row(
+            Modifier
+                .horizontalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp, vertical = 6.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Chip("All ${vm.habits.size}", filter < 0) { filter = -1 }
+            HabitCategory.values().forEach { c ->
+                val n = vm.habits.count { it.category == c }
+                if (n > 0) Chip("${c.label} $n", filter == c.ordinal) { filter = c.ordinal }
             }
         }
-        Spacer(Modifier.height(30.dp))
+
+        Column(
+            Modifier
+                .weight(1f)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp)
+                .navigationBarsPadding()
+        ) {
+            if (shown.isEmpty()) {
+                Spacer(Modifier.height(60.dp))
+                Txt(
+                    "No habits here yet.\nTap + to add one.",
+                    Modifier.fillMaxWidth(),
+                    size = 15.sp,
+                    color = p.muted,
+                    align = TextAlign.Center
+                )
+            }
+            Period.values().forEach { period ->
+                val group = shown.filter { it.period() == period }
+                if (group.isNotEmpty()) {
+                    val due = group.filter { it.isDue(today) }
+                    val done = due.count { today in it.doneDays }
+                    Row(
+                        Modifier.fillMaxWidth().padding(top = 18.dp, bottom = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Txt(
+                            period.label,
+                            size = 18.sp,
+                            weight = FontWeight.Bold,
+                            serif = true,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Txt("$done/${due.size}", size = 13.sp, color = p.muted)
+                    }
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        group.forEach { h ->
+                            val isDue = h.isDue(today)
+                            HabitRow(
+                                h, today,
+                                onToggle = { if (isDue) vm.toggleHabitDay(h.id, today) },
+                                onClick = { onOpenHabit(h.id) },
+                                modifier = Modifier.alpha(if (isDue) 1f else 0.55f),
+                                bar = true,
+                                checkAtEnd = true
+                            )
+                        }
+                    }
+                }
+            }
+            Spacer(Modifier.height(30.dp))
+        }
     }
 }

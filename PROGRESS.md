@@ -14,8 +14,8 @@ Legend: DONE = pushed and the build passed, PUSHED = pushed, build being checked
 |---|------|--------|
 | F1 | Sage light and dark theme, habit model (category, time, days), focus and onboarding storage | DONE |
 | F2 | Onboarding: welcome page and lifestyle questions that build a starter plan | DONE |
-| F3 | Home (5/7 ring, stat chips, Habits / Tasks switch, Today list) and new bottom bar | PUSHED |
-| F4 | Habits tab (categories, Morning / Afternoon / Evening), Add Habit / Task, Quick Add | TODO |
+| F3 | Home (5/7 ring, stat chips, Habits / Tasks switch, Today list) and new bottom bar | DONE |
+| F4 | Habits tab (categories, Morning / Afternoon / Evening), Add Habit / Task, Quick Add | PUSHED |
 | F5 | Habit details (Overview, History, Edit) | TODO |
 | F6 | Focus timer (Focus, Short Break, Long Break) | TODO |
 | F7 | Stats (Overview, Habits, Tasks, Focus, heatmap, categories, focus timeline) | TODO |

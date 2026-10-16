@@ -56,7 +56,8 @@ fun TaskForm(
     existing: Task?,
     prefillDay: Long?,
     today: Long,
-    onFinish: () -> Unit
+    onFinish: () -> Unit,
+    onSwitchToHabit: (() -> Unit)? = null
 ) {
     val p = LocalPalette.current
     val context = LocalContext.current
@@ -160,6 +161,10 @@ fun TaskForm(
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp)
         ) {
+            if (existing == null && onSwitchToHabit != null) {
+                SegmentedControl(listOf("Habit", "Task"), 1, { if (it == 0) onSwitchToHabit() })
+                Spacer(Modifier.height(16.dp))
+            }
             Spacer(Modifier.height(6.dp))
             Txt(
                 if (existing == null) "Create a New Task" else "Edit Task",

@@ -39,6 +39,7 @@ import kotlinx.coroutines.delay
 sealed interface Screen {
     data class NewTask(val day: Long?) : Screen
     data object Habits : Screen
+    data object NewHabit : Screen
     data class Detail(val id: String) : Screen
     data class EditTask(val id: String) : Screen
 }
@@ -47,6 +48,7 @@ sealed interface Screen {
 fun AppRoot(vm: AppViewModel) {
     val p = LocalPalette.current
     var tab by rememberSaveable { mutableIntStateOf(0) }
+    var addMode by rememberSaveable { mutableIntStateOf(0) }
     val stack = remember { mutableStateListOf<Screen>() }
     val today = vm.now.toLocalDate().toEpochDay()
     val snackbar = remember { SnackbarHostState() }
@@ -73,7 +75,7 @@ fun AppRoot(vm: AppViewModel) {
             contentWindowInsets = WindowInsets(0.dp, 0.dp, 0.dp, 0.dp),
             snackbarHost = { SnackbarHost(snackbar) },
             bottomBar = {
-                FloatingNav(tab, { tab = it }, onAdd = { stack.add(Screen.NewTask(vm.selectedDay)) })
+                FloatingNav(tab, { tab = it }, onAdd = { stack.add(if (addMode == 0) Screen.NewHabit else Screen.NewTask(vm.selectedDay)) })
             }
         ) { padding ->
             when (tab) {
@@ -114,26 +116,31 @@ fun AppRoot(vm: AppViewModel) {
                     ) {}
             ) {
                 when (top) {
+                    is Screen.NewHabit -> HabitForm(
+                        vm = vm,
+                        today = today,
+                        onFinish = { pop() },
+                        onSwitchToTask = {
+                            addMode = 1
+                            stack[stack.lastIndex] = Screen.NewTask(vm.selectedDay)
+                        }
+                    )
                     is Screen.NewTask -> TaskForm(
                         vm = vm,
                         existing = null,
                         prefillDay = top.day,
                         today = today,
-                        onFinish = { pop() }
+                        onFinish = { pop() },
+                        onSwitchToHabit = {
+                            addMode = 0
+                            stack[stack.lastIndex] = Screen.NewHabit
+                        }
                     )
                     is Screen.Habits -> HabitsScreen(
                         vm = vm,
                         onBack = { pop() },
-                        onDeleted = { h ->
-                            scope.launch {
-                                val r = snackbar.showSnackbar(
-                                    "Habit deleted",
-                                    actionLabel = "Undo",
-                                    duration = SnackbarDuration.Short
-                                )
-                                if (r == SnackbarResult.ActionPerformed) vm.restoreHabit(h)
-                            }
-                        }
+                        onOpenHabit = { },
+                        onAdd = { stack.add(Screen.NewHabit) }
                     )
                     is Screen.Detail -> TaskDetail(
                         vm = vm,
