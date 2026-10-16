@@ -40,6 +40,7 @@ sealed interface Screen {
     data class NewTask(val day: Long?) : Screen
     data object Habits : Screen
     data object NewHabit : Screen
+    data class HabitDetail(val id: String) : Screen
     data class Detail(val id: String) : Screen
     data class EditTask(val id: String) : Screen
 }
@@ -83,7 +84,7 @@ fun AppRoot(vm: AppViewModel) {
                     vm = vm,
                     padding = padding,
                     onOpenTask = { id -> stack.add(Screen.Detail(id)) },
-                    onOpenHabit = { stack.add(Screen.Habits) },
+                    onOpenHabit = { id -> stack.add(Screen.HabitDetail(id)) },
                     onOpenHabits = { stack.add(Screen.Habits) },
                     onOpenFocus = {}
                 )
@@ -139,8 +140,24 @@ fun AppRoot(vm: AppViewModel) {
                     is Screen.Habits -> HabitsScreen(
                         vm = vm,
                         onBack = { pop() },
-                        onOpenHabit = { },
+                        onOpenHabit = { id -> stack.add(Screen.HabitDetail(id)) },
                         onAdd = { stack.add(Screen.NewHabit) }
+                    )
+                    is Screen.HabitDetail -> HabitDetail(
+                        vm = vm,
+                        habitId = top.id,
+                        onBack = { pop() },
+                        onDeleted = { h ->
+                            pop()
+                            scope.launch {
+                                val r = snackbar.showSnackbar(
+                                    "Habit deleted",
+                                    actionLabel = "Undo",
+                                    duration = SnackbarDuration.Short
+                                )
+                                if (r == SnackbarResult.ActionPerformed) vm.restoreHabit(h)
+                            }
+                        }
                     )
                     is Screen.Detail -> TaskDetail(
                         vm = vm,
