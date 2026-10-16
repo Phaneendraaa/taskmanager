@@ -99,7 +99,7 @@ fun AppRoot(vm: AppViewModel) {
                 2 -> Box(Modifier.padding(bottom = padding.calculateBottomPadding())) {
                     FocusScreen(vm = vm, onClose = null)
                 }
-                else -> StatsScreen(
+                else -> InsightsScreen(
                     vm = vm,
                     padding = padding,
                     onPickDay = { day -> vm.selectedDay = day; tab = 0 }

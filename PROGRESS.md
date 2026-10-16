@@ -17,6 +17,6 @@ Legend: DONE = pushed and the build passed, DONE = pushed, build being checked, 
 | R4 | Today screen | PUSHED |
 | R5 | Habits tab, habit detail, simple add flow | PUSHED |
 | R6 | Focus tab | PUSHED |
-| R7 | Insights and weekly review | TODO |
+| R7 | Insights and weekly review | PUSHED |
 | R8 | Smart notifications | TODO |
 | R9 | Onboarding, settings, polish, README | TODO |
