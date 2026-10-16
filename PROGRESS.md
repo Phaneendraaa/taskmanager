@@ -19,7 +19,7 @@ TODO = not started
 | 5 | Calendar (month grid with task dots, day list) | DONE |
 | 6 | Progress (Week/Month/Year, ring, stats, daily goal, tasks by category) | DONE |
 | 7 | Profile and Habits (theme, daily goal, name, daily habits with streaks) | DONE |
-| 8 | Final polish, README, release check | PUSHED |
+| 8 | Final polish, README, release check | DONE |
 
 ## Part details
 
@@ -64,7 +64,7 @@ TODO = not started
 - `HabitsScreen.kt`: add habits, tick today, streak, best streak, 30 day rate, heatmap, undo delete
 - Habits open from the Home menu and from Profile
 
-### 8. Final polish (PUSHED)
+### 8. Final polish (DONE)
 - Version 3.0, README rewritten for the new app
 
 ### Notes
