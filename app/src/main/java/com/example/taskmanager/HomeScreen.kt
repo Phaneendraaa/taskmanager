@@ -1,7 +1,6 @@
 package com.example.taskmanager
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,9 +16,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DropdownMenu
@@ -35,51 +31,80 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import java.time.LocalDateTime
+import java.time.LocalDate
 
 @Composable
 fun HomeScreen(
     vm: AppViewModel,
     padding: PaddingValues,
     onOpenTask: (String) -> Unit,
-    onOpenProfile: () -> Unit,
-    onOpenHabits: () -> Unit
+    onOpenHabit: (String) -> Unit,
+    onOpenHabits: () -> Unit,
+    onOpenFocus: () -> Unit
 ) {
     val p = LocalPalette.current
     val now = vm.now
     val today = now.toLocalDate().toEpochDay()
-    val selected = vm.selectedDay
 
-    var catIndex by rememberSaveable { mutableIntStateOf(-1) }
+    var mode by rememberSaveable { mutableIntStateOf(0) }
     var searching by rememberSaveable { mutableStateOf(false) }
     var query by rememberSaveable { mutableStateOf("") }
     var menuOpen by remember { mutableStateOf(false) }
 
-    val all = vm.tasks.toList()
-    val byCategory = if (catIndex < 0) all else all.filter { it.category.ordinal == catIndex }
-    val order = compareBy<Task>({ it.dueMinute ?: Int.MAX_VALUE }, { -it.priority }, { it.createdAt })
+    val dueHabits = vm.habits
+        .filter { it.isDue(today) }
+        .sortedWith(compareBy({ it.timeMinute ?: Int.MAX_VALUE }, { it.name }))
+    val doneCount = dueHabits.count { today in it.doneDays }
+    val fraction = if (dueHabits.isEmpty()) 0f else doneCount.toFloat() / dueHabits.size
 
-    val dayTasks = byCategory.filter { it.dueDay == selected }.sortedWith(order)
+    // Share of due habit days completed from Monday up to today.
+    val weekStart = today - (LocalDate.ofEpochDay(today).dayOfWeek.value - 1)
+    var weekDue = 0
+    var weekDone = 0
+    for (d in weekStart..today) {
+        for (h in vm.habits) {
+            if (d >= h.createdDay && h.isDue(d)) {
+                weekDue++
+                if (d in h.doneDays) weekDone++
+            }
+        }
+    }
+    val weekPercent = if (weekDue == 0) 0 else weekDone * 100 / weekDue
+    val streak = maxOf(vm.habits.maxOfOrNull { it.currentStreak(today) } ?: 0, completionStreak(vm.tasks, today))
+
+    val selected = vm.selectedDay
+    val order = compareBy<Task>({ it.done }, { it.dueMinute ?: Int.MAX_VALUE }, { -it.priority }, { it.createdAt })
+    val dayTasks = vm.tasks.filter { it.dueDay == selected }.sortedWith(order)
     val overdueList = if (selected == today) {
-        byCategory.filter { !it.done && (it.dueDay ?: Long.MAX_VALUE) < today }.sortedBy { it.dueDay }
+        vm.tasks.filter { !it.done && (it.dueDay ?: Long.MAX_VALUE) < today }.sortedBy { it.dueDay }
     } else {
         emptyList()
     }
     val anytime = if (selected == today) {
-        byCategory.filter { !it.done && it.dueDay == null }.sortedWith(order)
+        vm.tasks.filter { !it.done && it.dueDay == null }.sortedWith(order)
     } else {
         emptyList()
     }
-    val results = if (query.isBlank()) {
+    val pendingTasks = dayTasks.count { !it.done } + overdueList.size + anytime.size
+
+    val habitHits = if (query.isBlank()) emptyList() else vm.habits.filter { it.name.contains(query, ignoreCase = true) }
+    val taskHits = if (query.isBlank()) {
         emptyList()
     } else {
-        all.filter { it.title.contains(query, ignoreCase = true) || it.notes.contains(query, ignoreCase = true) }
+        vm.tasks.filter { it.title.contains(query, ignoreCase = true) || it.notes.contains(query, ignoreCase = true) }
+    }
+
+    val title = when {
+        dueHabits.isNotEmpty() && doneCount == dueHabits.size -> "Perfect day."
+        fraction >= 0.5f -> "Consistent today."
+        doneCount > 0 -> "Keep going today."
+        else -> "Let's start today."
     }
 
     Box(
@@ -90,8 +115,9 @@ fun HomeScreen(
     ) {
         LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 24.dp)) {
 
-            if (searching) {
-                item {
+            // Top bar: menu, search, theme switch.
+            item {
+                if (searching) {
                     Row(
                         Modifier
                             .fillMaxWidth()
@@ -117,337 +143,320 @@ fun HomeScreen(
                             PlainField(
                                 value = query,
                                 onValueChange = { query = it },
-                                placeholder = "Search tasks",
+                                placeholder = "Search habits and tasks",
                                 singleLine = true,
                                 autoFocus = true
                             )
                         }
                     }
-                }
-                if (query.isBlank()) {
-                    item { EmptyNote("Search by title or notes.", "") }
-                } else if (results.isEmpty()) {
-                    item { EmptyNote("No matches.", "Try a different word.") }
-                }
-                items(results, key = { it.id }) { t ->
-                    TaskCard(
-                        task = t,
-                        today = today,
-                        now = now,
-                        onToggle = { vm.toggleTask(t.id) },
-                        onClick = { onOpenTask(t.id) },
-                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 5.dp)
-                    )
-                }
-            } else {
-                item {
-                    Box(
+                } else {
+                    Row(
                         Modifier
                             .fillMaxWidth()
-                            .height(340.dp)
+                            .statusBarsPadding()
+                            .padding(horizontal = 20.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        HeroArt(Modifier.fillMaxSize())
-                        Column(
-                            Modifier
-                                .fillMaxSize()
-                                .statusBarsPadding()
-                                .padding(horizontal = 24.dp, vertical = 12.dp)
-                        ) {
-                            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                                Box {
-                                    RoundIconButton(
-                                        Ic.MENU,
-                                        onClick = { menuOpen = true },
-                                        bg = Color.Transparent,
-                                        bordered = false
-                                    )
-                                    DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-                                        DropdownMenuItem(
-                                            text = { Text("Daily habits") },
-                                            onClick = {
-                                                menuOpen = false
-                                                onOpenHabits()
-                                            }
-                                        )
-                                        DropdownMenuItem(
-                                            text = { Text(if (p.dark) "Light mode" else "Dark mode") },
-                                            onClick = {
-                                                menuOpen = false
-                                                vm.setTheme(if (p.dark) "light" else "dark")
-                                            }
-                                        )
-                                        DropdownMenuItem(
-                                            text = { Text("Clear completed") },
-                                            onClick = {
-                                                menuOpen = false
-                                                vm.clearCompleted()
-                                            }
-                                        )
-                                    }
-                                }
-                                Spacer(Modifier.weight(1f))
-                                RoundIconButton(
-                                    Ic.SEARCH,
-                                    onClick = { searching = true },
-                                    bg = p.card.copy(alpha = 0.8f)
-                                )
-                                Spacer(Modifier.width(10.dp))
-                                Avatar(vm.userName, onClick = onOpenProfile)
+                        Box {
+                            RoundIconButton(Ic.MENU, onClick = { menuOpen = true }, bordered = false, bg = Color.Transparent)
+                            DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                                DropdownMenuItem(text = { Text("All habits") }, onClick = {
+                                    menuOpen = false
+                                    onOpenHabits()
+                                })
+                                DropdownMenuItem(text = { Text("Focus timer") }, onClick = {
+                                    menuOpen = false
+                                    onOpenFocus()
+                                })
+                                DropdownMenuItem(text = { Text("Clear completed tasks") }, onClick = {
+                                    menuOpen = false
+                                    vm.clearCompleted()
+                                })
                             }
-                            Spacer(Modifier.height(34.dp))
-                            Txt(greeting(now.hour) + ",", size = 18.sp, color = p.muted)
-                            Spacer(Modifier.height(4.dp))
-                            Txt("Let's make", size = 40.sp, weight = FontWeight.ExtraBold, lineHeight = 44.sp)
-                            Txt(
-                                "it happen.",
-                                size = 40.sp,
-                                weight = FontWeight.ExtraBold,
-                                color = p.accentText,
-                                lineHeight = 44.sp
+                        }
+                        Spacer(Modifier.weight(1f))
+                        RoundIconButton(Ic.SEARCH, onClick = { searching = true }, bordered = false, bg = Color.Transparent)
+                        Spacer(Modifier.width(8.dp))
+                        ThemePill(dark = p.dark) { vm.setTheme(if (p.dark) "light" else "dark") }
+                    }
+                }
+            }
+
+            if (searching) {
+                if (query.isBlank()) {
+                    item {
+                        Txt(
+                            "Type to search your habits and tasks.",
+                            Modifier.fillMaxWidth().padding(24.dp),
+                            size = 14.sp,
+                            color = p.muted,
+                            align = TextAlign.Center
+                        )
+                    }
+                } else if (habitHits.isEmpty() && taskHits.isEmpty()) {
+                    item {
+                        Txt(
+                            "Nothing found for \"$query\".",
+                            Modifier.fillMaxWidth().padding(24.dp),
+                            size = 14.sp,
+                            color = p.muted,
+                            align = TextAlign.Center
+                        )
+                    }
+                } else {
+                    if (habitHits.isNotEmpty()) {
+                        item { SectionLabel("Habits", habitHits.size.toString()) }
+                        items(habitHits.size) { i ->
+                            val h = habitHits[i]
+                            HabitRow(
+                                h, today,
+                                onToggle = { vm.toggleHabitDay(h.id, today) },
+                                onClick = { onOpenHabit(h.id) },
+                                modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp)
                             )
-                            Spacer(Modifier.height(10.dp))
-                            Txt(
-                                "“" + quoteOfTheDay(today) + "”",
-                                size = 14.sp,
-                                color = p.muted,
-                                modifier = Modifier.width(190.dp),
-                                lineHeight = 20.sp
+                        }
+                    }
+                    if (taskHits.isNotEmpty()) {
+                        item { SectionLabel("Tasks", taskHits.size.toString()) }
+                        items(taskHits.size) { i ->
+                            val t = taskHits[i]
+                            TaskCard(
+                                t, today, now,
+                                onToggle = { vm.toggleTask(t.id) },
+                                onClick = { onOpenTask(t.id) },
+                                modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp)
                             )
                         }
                     }
                 }
+                return@LazyColumn
+            }
 
-                item { DateStrip(today, selected) { vm.selectedDay = it } }
+            // Greeting and daily ring.
+            item {
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 22.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        val who = if (vm.userName.isBlank()) "" else "  •  Hi, " + vm.userName
+                        Txt(fullDateShort(today) + who, size = 14.sp, color = p.muted)
+                        Spacer(Modifier.height(6.dp))
+                        Txt(title, size = 34.sp, weight = FontWeight.Bold, serif = true, lineHeight = 38.sp)
+                    }
+                    Box(Modifier.size(104.dp), contentAlignment = Alignment.Center) {
+                        ProgressRing(fraction, Modifier.fillMaxSize(), thickness = 10.dp)
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Txt("$doneCount/${dueHabits.size}", size = 22.sp, weight = FontWeight.Bold)
+                            Txt("habits", size = 12.sp, color = p.muted)
+                        }
+                    }
+                }
+            }
 
+            // Stat tiles.
+            item {
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 14.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    StatTile(Ic.FLAME, Color(0xFFE2864E), streak.toString(), "day streak", Modifier.weight(1f))
+                    StatTile(Ic.CHART, p.accent, "$weekPercent%", "this week", Modifier.weight(1f))
+                    StatTile(Ic.STAR, Color(0xFFE3B65B), vm.habits.size.toString(), "total habits", Modifier.weight(1f))
+                }
+            }
+
+            // Habits | Tasks switch.
+            item {
+                Box(Modifier.padding(horizontal = 20.dp)) {
+                    SegmentedControl(
+                        listOf("Habits ${dueHabits.size}", "Tasks $pendingTasks"),
+                        mode,
+                        { mode = it }
+                    )
+                }
+                Spacer(Modifier.height(16.dp))
+            }
+
+            if (mode == 0) {
                 item {
-                    LazyRow(
-                        Modifier.padding(top = 18.dp),
-                        contentPadding = PaddingValues(horizontal = 24.dp),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 22.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        item {
-                            CategoryChip("All", null, p.text, catIndex < 0) { catIndex = -1 }
-                        }
-                        items(Category.values().toList()) { c ->
-                            CategoryChip(c.label, c.icon, c.color, catIndex == c.ordinal) {
-                                catIndex = if (catIndex == c.ordinal) -1 else c.ordinal
-                            }
-                        }
-                    }
-                }
-
-                if (overdueList.isNotEmpty()) {
-                    item { SectionTitle("Overdue", overdueList.size, StatusRed) }
-                    items(overdueList, key = { "o_" + it.id }) { t ->
-                        TaskCard(
-                            task = t,
-                            today = today,
-                            now = now,
-                            onToggle = { vm.toggleTask(t.id) },
-                            onClick = { onOpenTask(t.id) },
-                            modifier = Modifier.padding(horizontal = 24.dp, vertical = 5.dp)
+                        Txt("Today", size = 18.sp, weight = FontWeight.Bold, serif = true, modifier = Modifier.weight(1f))
+                        Txt(
+                            "View all",
+                            Modifier.clip(RoundedCornerShape(10.dp)).clickable(onClick = onOpenHabits).padding(6.dp),
+                            size = 13.sp,
+                            weight = FontWeight.SemiBold,
+                            color = p.accentText
                         )
                     }
                 }
-
-                item {
-                    SectionTitle(
-                        if (selected == today) "Today" else formatDay(selected, today),
-                        dayTasks.size,
-                        p.text
-                    )
-                }
-                if (dayTasks.isEmpty()) {
+                if (dueHabits.isEmpty()) {
                     item {
                         EmptyNote(
-                            "Nothing planned.",
-                            "Tap + to add a task for this day."
+                            if (vm.habits.isEmpty()) "No habits yet. Tap + to add your first one."
+                            else "Nothing due today. Enjoy the rest."
                         )
                     }
-                }
-                items(dayTasks, key = { it.id }) { t ->
-                    TaskCard(
-                        task = t,
-                        today = today,
-                        now = now,
-                        onToggle = { vm.toggleTask(t.id) },
-                        onClick = { onOpenTask(t.id) },
-                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 5.dp)
-                    )
-                }
-
-                if (anytime.isNotEmpty()) {
-                    item { SectionTitle("Anytime", anytime.size, p.text) }
-                    items(anytime, key = { "a_" + it.id }) { t ->
-                        TaskCard(
-                            task = t,
-                            today = today,
-                            now = now,
-                            onToggle = { vm.toggleTask(t.id) },
-                            onClick = { onOpenTask(t.id) },
-                            modifier = Modifier.padding(horizontal = 24.dp, vertical = 5.dp)
+                } else {
+                    items(dueHabits.size) { i ->
+                        val h = dueHabits[i]
+                        HabitRow(
+                            h, today,
+                            onToggle = { vm.toggleHabitDay(h.id, today) },
+                            onClick = { onOpenHabit(h.id) },
+                            modifier = Modifier.padding(horizontal = 20.dp, vertical = 5.dp)
                         )
                     }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun SectionTitle(title: String, count: Int, color: Color) {
-    val p = LocalPalette.current
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 10.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Txt(title, size = 24.sp, weight = FontWeight.Bold, color = color, modifier = Modifier.weight(1f))
-        Txt(if (count == 1) "1 task" else "$count tasks", size = 14.sp, color = p.muted)
-    }
-}
-
-@Composable
-private fun EmptyNote(title: String, subtitle: String) {
-    val p = LocalPalette.current
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .padding(vertical = 36.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Txt(title, size = 18.sp, weight = FontWeight.SemiBold)
-        if (subtitle.isNotEmpty()) {
-            Spacer(Modifier.height(6.dp))
-            Txt(subtitle, size = 14.sp, color = p.muted)
-        }
-    }
-}
-
-@Composable
-private fun DateStrip(today: Long, selected: Long, onSelect: (Long) -> Unit) {
-    val p = LocalPalette.current
-    val listState = rememberLazyListState(initialFirstVisibleItemIndex = 14)
-    LazyRow(
-        state = listState,
-        contentPadding = PaddingValues(horizontal = 24.dp),
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        items(count = 60, key = { it }) { i ->
-            val day = today - 14 + i
-            val on = day == selected
-            val shape = RoundedCornerShape(18.dp)
-            if (on) {
-                Column(
-                    Modifier
-                        .width(78.dp)
-                        .height(66.dp)
-                        .shadow(8.dp, shape, clip = false, ambientColor = p.accent, spotColor = p.accent)
-                        .clip(shape)
-                        .background(p.gradient)
-                        .clickable { onSelect(day) },
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Txt(shortDow(day), size = 13.sp, color = Color.White.copy(alpha = 0.85f))
-                    Spacer(Modifier.height(2.dp))
-                    Txt(
-                        dayOfMonth(day).toString() + " " + shortMonth(day),
-                        size = 16.sp,
-                        weight = FontWeight.Bold,
-                        color = Color.White
-                    )
                 }
             } else {
-                Column(
-                    Modifier
-                        .width(56.dp)
-                        .height(66.dp)
-                        .clip(shape)
-                        .background(p.card.copy(alpha = if (p.dark) 1f else 0.85f))
-                        .border(1.dp, p.cardBorder, shape)
-                        .clickable { onSelect(day) },
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Txt(shortDow(day), size = 13.sp, color = p.muted)
-                    Spacer(Modifier.height(2.dp))
-                    Txt(dayOfMonth(day).toString(), size = 17.sp, weight = FontWeight.SemiBold)
+                item {
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 22.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Txt(
+                            formatDay(selected, today),
+                            size = 18.sp,
+                            weight = FontWeight.Bold,
+                            serif = true,
+                            modifier = Modifier.weight(1f)
+                        )
+                        if (selected != today) {
+                            Txt(
+                                "Back to today",
+                                Modifier
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .clickable { vm.selectedDay = today }
+                                    .padding(6.dp),
+                                size = 13.sp,
+                                weight = FontWeight.SemiBold,
+                                color = p.accentText
+                            )
+                        }
+                    }
+                }
+                if (overdueList.isNotEmpty()) {
+                    item { SectionLabel("Overdue", overdueList.size.toString(), StatusRed) }
+                    items(overdueList.size) { i ->
+                        val t = overdueList[i]
+                        TaskCard(
+                            t, today, now,
+                            onToggle = { vm.toggleTask(t.id) },
+                            onClick = { onOpenTask(t.id) },
+                            modifier = Modifier.padding(horizontal = 20.dp, vertical = 5.dp)
+                        )
+                    }
+                }
+                if (dayTasks.isNotEmpty()) {
+                    items(dayTasks.size) { i ->
+                        val t = dayTasks[i]
+                        TaskCard(
+                            t, today, now,
+                            onToggle = { vm.toggleTask(t.id) },
+                            onClick = { onOpenTask(t.id) },
+                            modifier = Modifier.padding(horizontal = 20.dp, vertical = 5.dp)
+                        )
+                    }
+                }
+                if (anytime.isNotEmpty()) {
+                    item { SectionLabel("Anytime", anytime.size.toString()) }
+                    items(anytime.size) { i ->
+                        val t = anytime[i]
+                        TaskCard(
+                            t, today, now,
+                            onToggle = { vm.toggleTask(t.id) },
+                            onClick = { onOpenTask(t.id) },
+                            modifier = Modifier.padding(horizontal = 20.dp, vertical = 5.dp)
+                        )
+                    }
+                }
+                if (dayTasks.isEmpty() && overdueList.isEmpty() && anytime.isEmpty()) {
+                    item { EmptyNote("No tasks for this day. Tap + to add one.") }
                 }
             }
         }
     }
 }
 
-@Composable
-fun TaskCard(
-    task: Task,
-    today: Long,
-    now: LocalDateTime,
-    onToggle: () -> Unit,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val p = LocalPalette.current
-    val overdue = task.isOverdue(now)
-    val minute = task.dueMinute
-    val day = task.dueDay
-    val whenText = when {
-        overdue -> "Overdue"
-        minute != null -> formatMinute(minute)
-        day != null -> formatDay(day, today)
-        else -> "Anytime"
-    }
-    val subDone = task.subtasks.count { it.done }
-    val subText = if (task.subtasks.isNotEmpty()) "  •  $subDone/${task.subtasks.size}" else ""
+private fun fullDateShort(day: Long): String =
+    shortDow(day) + ", " + dayOfMonth(day) + " " + shortMonth(day)
 
+@Composable
+private fun SectionLabel(text: String, count: String, color: Color = LocalPalette.current.muted) {
     Row(
-        modifier
-            .fillMaxWidth()
-            .cardStyle(p, 18.dp)
-            .clickable(onClick = onClick)
-            .padding(horizontal = 8.dp, vertical = 9.dp),
+        Modifier.fillMaxWidth().padding(horizontal = 22.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        CheckCircle(task.done, onToggle)
-        AppIcon(
-            task.iconKind(),
-            if (task.done) p.muted else task.category.color,
-            size = 22.dp,
-            filled = true
-        )
-        Spacer(Modifier.width(12.dp))
-        Column(Modifier.weight(1f)) {
-            Txt(
-                task.title,
-                size = 16.sp,
-                weight = FontWeight.SemiBold,
-                color = if (task.done) p.muted else p.text,
-                strike = task.done,
-                maxLines = 1
-            )
-            Spacer(Modifier.height(3.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    Modifier
-                        .size(7.dp)
-                        .clip(CircleShape)
-                        .background(task.category.color)
-                )
-                Spacer(Modifier.width(6.dp))
-                Txt(
-                    task.category.label + "  •  " + whenText + subText,
-                    size = 12.sp,
-                    color = if (overdue) StatusRed else p.muted,
-                    maxLines = 1
-                )
-            }
+        Txt(text, size = 14.sp, weight = FontWeight.SemiBold, color = color, modifier = Modifier.weight(1f))
+        Txt(count, size = 13.sp, color = LocalPalette.current.muted)
+    }
+}
+
+@Composable
+private fun EmptyNote(text: String) {
+    Txt(
+        text,
+        Modifier.fillMaxWidth().padding(horizontal = 28.dp, vertical = 28.dp),
+        size = 14.sp,
+        color = LocalPalette.current.muted,
+        align = TextAlign.Center
+    )
+}
+
+@Composable
+private fun StatTile(ic: Ic, tint: Color, value: String, label: String, modifier: Modifier) {
+    val p = LocalPalette.current
+    Row(
+        modifier.cardStyle(p, 18.dp).padding(horizontal = 12.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        AppIcon(ic, tint, size = 22.dp, filled = ic == Ic.FLAME || ic == Ic.STAR)
+        Spacer(Modifier.width(8.dp))
+        Column {
+            Txt(value, size = 18.sp, weight = FontWeight.Bold, maxLines = 1)
+            Txt(label, size = 10.sp, color = p.muted, maxLines = 1)
         }
-        if (task.priority == 3) {
-            AppIcon(Ic.FLAG, StatusRed, size = 20.dp)
-            Spacer(Modifier.width(8.dp))
-        }
+    }
+}
+
+/** Sun / moon switch like the reference. */
+@Composable
+private fun ThemePill(dark: Boolean, onClick: () -> Unit) {
+    val p = LocalPalette.current
+    val shape = RoundedCornerShape(50)
+    Row(
+        Modifier
+            .clip(shape)
+            .background(p.field)
+            .clickable(onClick = onClick)
+            .padding(4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            Modifier
+                .size(34.dp)
+                .clip(CircleShape)
+                .background(if (!dark) p.card else Color.Transparent),
+            contentAlignment = Alignment.Center
+        ) { AppIcon(Ic.SUN, if (!dark) p.accent else p.muted, size = 18.dp) }
+        Box(
+            Modifier
+                .size(34.dp)
+                .clip(CircleShape)
+                .background(if (dark) p.card else Color.Transparent),
+            contentAlignment = Alignment.Center
+        ) { AppIcon(Ic.MOON, if (dark) p.accent else p.muted, size = 18.dp) }
     }
 }

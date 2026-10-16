@@ -81,8 +81,9 @@ fun AppRoot(vm: AppViewModel) {
                     vm = vm,
                     padding = padding,
                     onOpenTask = { id -> stack.add(Screen.Detail(id)) },
-                    onOpenProfile = { tab = 3 },
-                    onOpenHabits = { stack.add(Screen.Habits) }
+                    onOpenHabit = { stack.add(Screen.Habits) },
+                    onOpenHabits = { stack.add(Screen.Habits) },
+                    onOpenFocus = {}
                 )
                 1 -> CalendarScreen(
                     vm = vm,
