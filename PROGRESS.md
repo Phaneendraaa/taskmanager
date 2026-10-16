@@ -10,9 +10,9 @@ Legend: DONE = pushed and the build passed, DONE = pushed, build being checked, 
 
 | # | Part | Status |
 |---|------|--------|
-| R0 | Research and product spec | PUSHED |
-| R1 | Screenshot harness so spacing and clipped text can be checked | TODO |
-| R2 | Premium design system, calendar removed, four tab navigation | TODO |
+| R0 | Research and product spec | DONE |
+| R1 | Screenshot harness so spacing and clipped text can be checked | DONE |
+| R2 | Premium design system, calendar removed, four tab navigation | PUSHED, CI green |
 | R3 | Data model: cue, minimum version, identity, priorities, reflections, grace rule | TODO |
 | R4 | Today screen | TODO |
 | R5 | Habits tab, habit detail, simple add flow | TODO |
