@@ -21,6 +21,17 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     val tasks = mutableStateListOf<Task>()
     val habits = mutableStateListOf<Habit>()
+    val focusSessions = mutableStateListOf<FocusSession>()
+
+    var onboarded by mutableStateOf(prefs.getBoolean("onboarded", false))
+        private set
+
+    var focusLen by mutableIntStateOf(prefs.getInt("focusLen", 25))
+        private set
+    var shortLen by mutableIntStateOf(prefs.getInt("shortLen", 5))
+        private set
+    var longLen by mutableIntStateOf(prefs.getInt("longLen", 15))
+        private set
 
     var themeMode by mutableStateOf(prefs.getString("theme", "light") ?: "light")
         private set
@@ -40,6 +51,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     init {
         tasks.addAll(loadTasks())
         habits.addAll(loadHabits())
+        focusSessions.addAll(loadFocus())
     }
 
     fun newId(): String = UUID.randomUUID().toString()
@@ -66,6 +78,24 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun updateUserName(name: String) {
         userName = name.take(24)
         prefs.edit().putString("name", userName).apply()
+    }
+
+    fun finishOnboarding() {
+        onboarded = true
+        prefs.edit().putBoolean("onboarded", true).apply()
+    }
+
+    fun updateFocusLengths(focus: Int, short: Int, long: Int) {
+        focusLen = focus.coerceIn(5, 90)
+        shortLen = short.coerceIn(1, 30)
+        longLen = long.coerceIn(5, 60)
+        prefs.edit().putInt("focusLen", focusLen).putInt("shortLen", shortLen).putInt("longLen", longLen).apply()
+    }
+
+    fun logFocus(minutes: Int, label: String) {
+        if (minutes <= 0) return
+        focusSessions.add(FocusSession(System.currentTimeMillis(), minutes, label))
+        saveFocus()
     }
 
     // ---------- Tasks ----------
@@ -190,6 +220,14 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         habits.add(Habit(id = newId(), name = clean, createdDay = LocalDate.now().toEpochDay()))
         saveHabits()
     }
+
+    fun upsertHabit(habit: Habit) {
+        val i = habits.indexOfFirst { it.id == habit.id }
+        if (i >= 0) habits[i] = habit else habits.add(habit)
+        saveHabits()
+    }
+
+    fun habitById(id: String): Habit? = habits.firstOrNull { it.id == id }
 
     fun renameHabit(id: String, name: String) {
         val i = habits.indexOfFirst { it.id == id }
@@ -339,6 +377,12 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             o.put("name", h.name)
             o.put("createdDay", h.createdDay)
             o.put("days", days)
+            o.put("category", h.category.name)
+            val tm = h.timeMinute
+            if (tm != null) o.put("timeMinute", tm)
+            o.put("daysMask", h.daysMask)
+            o.put("icon", h.icon)
+            o.put("reminder", h.reminder)
             arr.put(o)
         }
         prefs.edit().putString("habits", arr.toString()).apply()
@@ -359,8 +403,38 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                     id = o.getString("id"),
                     name = o.getString("name"),
                     createdDay = o.optLong("createdDay", LocalDate.now().toEpochDay()),
-                    doneDays = set
+                    doneDays = set,
+                    category = enumOrDefault(o.optString("category", ""), HabitCategory.PERSONAL),
+                    timeMinute = if (o.has("timeMinute")) o.getInt("timeMinute") else null,
+                    daysMask = o.optInt("daysMask", 127),
+                    icon = o.optString("icon", ""),
+                    reminder = o.optBoolean("reminder", false)
                 )
+            }
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    private fun saveFocus() {
+        val arr = JSONArray()
+        focusSessions.forEach { f ->
+            val o = JSONObject()
+            o.put("at", f.endedAt)
+            o.put("min", f.minutes)
+            o.put("label", f.label)
+            arr.put(o)
+        }
+        prefs.edit().putString("focus", arr.toString()).apply()
+    }
+
+    private fun loadFocus(): List<FocusSession> {
+        val raw = prefs.getString("focus", null) ?: return emptyList()
+        return try {
+            val arr = JSONArray(raw)
+            (0 until arr.length()).map { i ->
+                val o = arr.getJSONObject(i)
+                FocusSession(o.getLong("at"), o.getInt("min"), o.optString("label", ""))
             }
         } catch (e: Exception) {
             emptyList()

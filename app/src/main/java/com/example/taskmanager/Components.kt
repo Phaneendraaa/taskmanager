@@ -84,7 +84,7 @@ fun Modifier.cardStyle(p: Palette, radius: Dp = 18.dp): Modifier {
     val base = if (p.dark) {
         this
     } else {
-        this.shadow(3.dp, shape, clip = false, ambientColor = Color(0x225B4FE6), spotColor = Color(0x225B4FE6))
+        this.shadow(3.dp, shape, clip = false, ambientColor = Color(0x223F6B53), spotColor = Color(0x223F6B53))
     }
     return base
         .background(p.card, shape)
@@ -249,7 +249,7 @@ fun CategoryChip(
 fun GradientProgress(fraction: Float, modifier: Modifier = Modifier, height: Dp = 8.dp, brush: Brush? = null) {
     val p = LocalPalette.current
     val animated by animateFloatAsState(targetValue = fraction.coerceIn(0f, 1f), label = "progress")
-    val fill: Brush = brush ?: Brush.horizontalGradient(listOf(p.accent, Color(0xFFFF6FB5), Color(0xFFFFA45C)))
+    val fill: Brush = brush ?: Brush.horizontalGradient(listOf(p.accent2, p.accent, Color(0xFF8DB596)))
     val shape = RoundedCornerShape(50)
     Box(
         modifier

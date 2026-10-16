@@ -24,9 +24,9 @@ fun HeroArt(modifier: Modifier = Modifier) {
 
         // sky
         val sky = if (dark) {
-            listOf(Color(0xFF1A1340), Color(0xFF3B2470), Color(0xFF9B5A9B))
+            listOf(Color(0xFF0E1511), Color(0xFF1A2B22), Color(0xFF3B5A47))
         } else {
-            listOf(Color(0xFFD7D0F8), Color(0xFFF6D8DC), Color(0xFFFFE1BF))
+            listOf(Color(0xFFDCE6D2), Color(0xFFF1EBD6), Color(0xFFFBE6C4))
         }
         drawRect(Brush.verticalGradient(sky))
 
@@ -57,16 +57,16 @@ fun HeroArt(modifier: Modifier = Modifier) {
             drawPath(path, color)
         }
 
-        val far = if (dark) Color(0xFF4A3A86) else Color(0xFFC4B8EE)
-        val mid = if (dark) Color(0xFF3A2C72) else Color(0xFFA997E2)
-        val near = if (dark) Color(0xFF2A1F5A) else Color(0xFF8672CF)
+        val far = if (dark) Color(0xFF2F4A3B) else Color(0xFFB9CFB6)
+        val mid = if (dark) Color(0xFF243D30) else Color(0xFF93B39A)
+        val near = if (dark) Color(0xFF1B3025) else Color(0xFF6E967C)
 
         ridge(far, 0f, 0.70f, 0.12f, 0.60f, 0.22f, 0.68f, 0.38f, 0.52f, 0.52f, 0.66f, 0.66f, 0.56f, 0.82f, 0.68f, 1f, 0.58f)
         ridge(mid, 0f, 0.80f, 0.15f, 0.70f, 0.30f, 0.80f, 0.50f, 0.66f, 0.70f, 0.82f, 0.85f, 0.74f, 1f, 0.82f)
         ridge(near, 0.50f, 1f, 0.60f, 0.83f, 0.68f, 0.77f, 0.76f, 0.74f, 0.86f, 0.78f, 1f, 0.76f)
 
         // hiker standing on the cliff
-        val ink = if (dark) Color(0xFF120D2B) else Color(0xFF2A2150)
+        val ink = if (dark) Color(0xFF0B1410) else Color(0xFF2B3F33)
         val hx = w * 0.77f
         val hy = h * 0.74f
         val u = h * 0.0125f
@@ -77,7 +77,7 @@ fun HeroArt(modifier: Modifier = Modifier) {
         drawLine(ink, Offset(hx + 0.5f * u, hy - 8.5f * u), Offset(hx + 3f * u, hy - 5.2f * u), strokeWidth = 1.2f * u, cap = StrokeCap.Round)
 
         // birds
-        val birdColor = if (dark) Color(0xFFE8DFFF) else Color(0xFF6B5FA8)
+        val birdColor = if (dark) Color(0xFFDDEBDD) else Color(0xFF55725F)
         val bw = 1.4f * density
         fun bird(cx: Float, cy: Float, sz: Float) {
             val path = Path()

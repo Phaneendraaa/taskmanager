@@ -10,10 +10,10 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 
-val StatusGreen = Color(0xFF2ECC71)
-val StatusBlue = Color(0xFF4C8DFF)
-val StatusRed = Color(0xFFFF4D5E)
-val Amber = Color(0xFFF5B73B)
+val StatusGreen = Color(0xFF5FA777)
+val StatusBlue = Color(0xFF6C8FD0)
+val StatusRed = Color(0xFFD9695F)
+val Amber = Color(0xFFE3A857)
 
 @Immutable
 class Palette(
@@ -35,38 +35,39 @@ class Palette(
     val gradient: Brush get() = Brush.linearGradient(listOf(accent, accent2))
 }
 
+// Sage theme
 val LightPalette = Palette(
     dark = false,
-    bg = Color(0xFFFAF9FF),
-    glow = Color(0xFFEBE6FF),
+    bg = Color(0xFFF7F4EB),
+    glow = Color(0xFFE4EADB),
     card = Color(0xFFFFFFFF),
-    cardBorder = Color(0xFFECE8F7),
-    field = Color(0xFFF2F0FA),
-    text = Color(0xFF15122B),
-    muted = Color(0xFF6F6B85),
-    faint = Color(0xFFE6E2F2),
-    accent = Color(0xFF6C4DF6),
-    accent2 = Color(0xFFA85CFF),
-    accentText = Color(0xFF4F46E5),
-    inverse = Color(0xFF15122B),
+    cardBorder = Color(0xFFE9ECDF),
+    field = Color(0xFFEEF1E6),
+    text = Color(0xFF1E2A23),
+    muted = Color(0xFF6A786F),
+    faint = Color(0xFFDDE3D4),
+    accent = Color(0xFF3F6B53),
+    accent2 = Color(0xFF2D5642),
+    accentText = Color(0xFF3F6B53),
+    inverse = Color(0xFF26302B),
     onInverse = Color(0xFFFFFFFF)
 )
 
 val DarkPalette = Palette(
     dark = true,
-    bg = Color(0xFF0C0A13),
-    glow = Color(0xFF1B1235),
-    card = Color(0xFF171421),
-    cardBorder = Color(0xFF262236),
-    field = Color(0xFF1C1829),
-    text = Color(0xFFF4F2FB),
-    muted = Color(0xFF9B96B3),
-    faint = Color(0xFF2A2639),
-    accent = Color(0xFF7C5CFF),
-    accent2 = Color(0xFFB45CFF),
-    accentText = Color(0xFF8B7CFF),
-    inverse = Color(0xFFFFFFFF),
-    onInverse = Color(0xFF15122B)
+    bg = Color(0xFF0E1511),
+    glow = Color(0xFF16231B),
+    card = Color(0xFF17211B),
+    cardBorder = Color(0xFF243029),
+    field = Color(0xFF1C2820),
+    text = Color(0xFFE9F0E8),
+    muted = Color(0xFF93A59A),
+    faint = Color(0xFF2B3A31),
+    accent = Color(0xFF4F9068),
+    accent2 = Color(0xFF3B7852),
+    accentText = Color(0xFF8CC7A2),
+    inverse = Color(0xFFE9F0E8),
+    onInverse = Color(0xFF14201A)
 )
 
 val LocalPalette = staticCompositionLocalOf { LightPalette }

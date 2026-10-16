@@ -17,12 +17,12 @@ enum class Repeat(val label: String) {
 }
 
 enum class Category(val label: String, val color: Color, val icon: Ic) {
-    WORK("Work", Color(0xFF6C63FF), Ic.BRIEFCASE),
-    PERSONAL("Personal", Color(0xFF2ECC8F), Ic.HOME),
-    STUDY("Study", Color(0xFFFF5C9E), Ic.BOOK),
-    HEALTH("Health", Color(0xFFF5B73B), Ic.DUMBBELL),
-    CAREER("Career", Color(0xFFFF8A3D), Ic.DOC),
-    OTHER("Other", Color(0xFF8E94A8), Ic.MORE_H)
+    WORK("Work", Color(0xFF5B7FC7), Ic.BRIEFCASE),
+    PERSONAL("Personal", Color(0xFF5FA777), Ic.HOME),
+    STUDY("Study", Color(0xFFD9A441), Ic.BOOK),
+    HEALTH("Health", Color(0xFFD9695F), Ic.DUMBBELL),
+    CAREER("Career", Color(0xFFD98B4A), Ic.DOC),
+    OTHER("Other", Color(0xFF8E9A92), Ic.MORE_H)
 }
 
 data class SubTask(val id: String, val title: String, val done: Boolean = false)
@@ -52,13 +52,31 @@ data class Task(
     val completedAt: Long? = null
 )
 
-/** A habit repeats every day. doneDays holds the epoch days it was completed. */
+enum class HabitCategory(val label: String, val color: Color, val icon: Ic) {
+    HEALTH("Health", Color(0xFFD9695F), Ic.DUMBBELL),
+    LEARNING("Learning", Color(0xFFE3B65B), Ic.BOOK),
+    PERSONAL("Personal", Color(0xFF5FA777), Ic.PERSON),
+    PRODUCTIVITY("Productivity", Color(0xFF5B7FC7), Ic.TARGET),
+    OTHERS("Others", Color(0xFF8E9A92), Ic.MORE_H)
+}
+
+/**
+ * A habit repeats on the days in [daysMask] (bit 0 = Monday ... bit 6 = Sunday, 127 = every day).
+ * doneDays holds the epoch days it was completed. timeMinute is the optional time of day.
+ */
 data class Habit(
     val id: String,
     val name: String,
     val createdDay: Long,
-    val doneDays: Set<Long> = emptySet()
+    val doneDays: Set<Long> = emptySet(),
+    val category: HabitCategory = HabitCategory.PERSONAL,
+    val timeMinute: Int? = null,
+    val daysMask: Int = 127,
+    val icon: String = "",
+    val reminder: Boolean = false
 )
+
+data class FocusSession(val endedAt: Long, val minutes: Int, val label: String)
 
 fun Task.isOverdue(now: LocalDateTime): Boolean {
     val day = dueDay ?: return false
@@ -85,12 +103,55 @@ fun Task.iconKind(): Ic {
 
 // ---------- Habits ----------
 
-fun Habit.currentStreak(today: Long): Int {
-    var d = if (today in doneDays) today else today - 1
+enum class Period(val label: String) { MORNING("Morning"), AFTERNOON("Afternoon"), EVENING("Evening"), ANYTIME("Anytime") }
+
+fun Habit.isDue(day: Long): Boolean {
+    val dow = LocalDate.ofEpochDay(day).dayOfWeek.value - 1
+    return (daysMask shr dow) and 1 == 1
+}
+
+fun Habit.period(): Period {
+    val m = timeMinute ?: return Period.ANYTIME
+    return when {
+        m < 12 * 60 -> Period.MORNING
+        m < 17 * 60 -> Period.AFTERNOON
+        else -> Period.EVENING
+    }
+}
+
+fun Habit.iconKind(): Ic {
+    val named = Ic.values().firstOrNull { it.name == icon }
+    return named ?: category.icon
+}
+
+fun Habit.frequencyText(): String = when {
+    daysMask == 127 -> "Every day"
+    daysMask == 31 -> "Weekdays"
+    else -> {
+        val names = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+        names.filterIndexed { i, _ -> (daysMask shr i) and 1 == 1 }.joinToString(", ")
+    }
+}
+
+/** Last day (up to today) that the habit was due, searching back at most a year. */
+private fun Habit.lastDueOnOrBefore(day: Long): Long {
+    var d = day
     var n = 0
-    while (d in doneDays) {
-        n++
-        d--
+    while (!isDue(d) && n < 370) { d--; n++ }
+    return d
+}
+
+fun Habit.currentStreak(today: Long): Int {
+    var d = today
+    // Today does not break the streak until the day is over.
+    if (isDue(d) && d !in doneDays) d--
+    var n = 0
+    var guard = 0
+    while (guard < 4000) {
+        guard++
+        if (d < createdDay - 1 && d !in doneDays) break
+        if (!isDue(d)) { if (d in doneDays) n++; d--; continue }
+        if (d in doneDays) { n++; d-- } else break
     }
     return n
 }
@@ -98,28 +159,40 @@ fun Habit.currentStreak(today: Long): Int {
 fun Habit.bestStreak(): Int {
     if (doneDays.isEmpty()) return 0
     val sorted = doneDays.sorted()
-    var best = 1
-    var run = 1
-    for (i in 1 until sorted.size) {
-        run = if (sorted[i] == sorted[i - 1] + 1) run + 1 else 1
+    var best = 0
+    var run = 0
+    var prev: Long? = null
+    for (d in sorted) {
+        val p0 = prev
+        run = if (p0 == null) 1 else {
+            var gapBroken = false
+            var x = p0 + 1
+            while (x < d) { if (isDue(x)) { gapBroken = true; break }; x++ }
+            if (gapBroken) 1 else run + 1
+        }
         if (run > best) best = run
+        prev = d
     }
     return best
 }
 
-/** Percent of days completed in the last [windowDays] days (since the habit was created). */
+/** Percent of due days completed in the last [windowDays] days (since the habit was created). */
 fun Habit.rate(today: Long, windowDays: Int = 30): Int {
     val start = maxOf(createdDay, today - (windowDays - 1))
-    val span = (today - start + 1).toInt()
-    if (span <= 0) return 0
+    var due = 0
     var done = 0
     var d = start
     while (d <= today) {
-        if (d in doneDays) done++
+        if (isDue(d)) { due++; if (d in doneDays) done++ }
         d++
     }
-    return done * 100 / span
+    return if (due == 0) 0 else done * 100 / due
 }
+
+/** Percent of due days completed since the habit was created. */
+fun Habit.overallRate(today: Long): Int = rate(today, (today - createdDay + 1).toInt().coerceAtLeast(1))
+
+fun Habit.dueCount(day: Long): Int = if (isDue(day)) 1 else 0
 
 /** Days in a row (ending today or yesterday) with at least one completed task. */
 fun completionStreak(tasks: List<Task>, today: Long): Int {
