@@ -385,6 +385,29 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         return copy.id
     }
 
+    /** Wipes habits, tasks, focus history and check-ins, then shows the welcome flow again. Settings stay. */
+    fun startFresh() {
+        habits.clear()
+        tasks.clear()
+        focusSessions.clear()
+        reviews.clear()
+        priorities.clear()
+        saveHabits()
+        saveTasks()
+        saveFocus()
+        savePlanning()
+        selectMode(0)
+        updateIdentity("")
+        onboarded = false
+        prefs.edit().putBoolean("onboarded", false).apply()
+    }
+
+    /** Shows the welcome flow again without touching any data. */
+    fun replayIntro() {
+        onboarded = false
+        prefs.edit().putBoolean("onboarded", false).apply()
+    }
+
     fun clearCompleted() {
         tasks.removeAll { it.done }
         saveTasks()

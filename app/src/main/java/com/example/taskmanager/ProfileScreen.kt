@@ -66,6 +66,7 @@ fun ProfileScreen(
     var focusDialog by remember { mutableStateOf(false) }
     var confirmRestore by remember { mutableStateOf(false) }
     var confirmClear by remember { mutableStateOf(false) }
+    var confirmFresh by remember { mutableStateOf(false) }
 
     fun toast(text: String) = Toast.makeText(context, text, Toast.LENGTH_SHORT).show()
 
@@ -222,6 +223,13 @@ fun ProfileScreen(
         Spacer(Modifier.height(10.dp))
         SettingsRow(Ic.TRASH, "Clear completed tasks", "$totalDone completed") { confirmClear = true }
 
+        Spacer(Modifier.height(22.dp))
+        Txt("Start over", size = 16.sp, weight = FontWeight.Bold, serif = true)
+        Spacer(Modifier.height(10.dp))
+        SettingsRow(Ic.SPARKLE, "Replay the welcome tour", "See the intro again, keep your data") { vm.replayIntro() }
+        Spacer(Modifier.height(10.dp))
+        SettingsRow(Ic.TRASH, "Start fresh", "Remove all habits and tasks, then set up again") { confirmFresh = true }
+
         Spacer(Modifier.height(24.dp))
         Txt(
             "forge " + (try { context.packageManager.getPackageInfo(context.packageName, 0).versionName } catch (e: Exception) { "" }) + "  •  Everything is stored on this phone only.",
@@ -267,6 +275,20 @@ fun ProfileScreen(
                 }) { Text("Choose file") }
             },
             dismissButton = { TextButton(onClick = { confirmRestore = false }) { Text("Cancel") } }
+        )
+    }
+    if (confirmFresh) {
+        AlertDialog(
+            onDismissRequest = { confirmFresh = false },
+            title = { Text("Start fresh?") },
+            text = { Text("This removes every habit, task, focus session and check-in on this phone, then opens the welcome flow. Export a backup first if you might want them back.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmFresh = false
+                    vm.startFresh()
+                }) { Text("Remove everything") }
+            },
+            dismissButton = { TextButton(onClick = { confirmFresh = false }) { Text("Cancel") } }
         )
     }
     if (confirmClear) {
