@@ -63,7 +63,9 @@ fun ProgressRing(fraction: Float, modifier: Modifier = Modifier, thickness: Dp =
 
 fun habitSubtitle(h: Habit): String {
     val time = h.timeMinute?.let { formatMinute(it) } ?: "Anytime"
-    return if (h.daysMask == 127) time else time + "  •  " + h.frequencyText()
+    val cue = h.cue.trim().trimEnd('.')
+    val first = if (cue.isEmpty()) time else (if (cue.startsWith("after", true)) cue else "After I $cue")
+    return if (h.daysMask == 127) first else first + "  •  " + h.frequencyText()
 }
 
 /**
@@ -82,12 +84,11 @@ fun HabitRow(
 ) {
     val p = LocalPalette.current
     val done = today in habit.doneDays
-    val tint = habit.category.color
-    val shape = RoundedCornerShape(18.dp)
+    val tint = p.muted
     Row(
         modifier
             .fillMaxWidth()
-            .cardStyle(p, 18.dp)
+            .cardStyle(p, 16.dp)
             .clickable(onClick = onClick),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -96,7 +97,7 @@ fun HabitRow(
                 Modifier
                     .width(4.dp)
                     .height(64.dp)
-                    .background(tint)
+                    .background(p.accent)
             )
             Spacer(Modifier.width(10.dp))
         } else {
@@ -106,11 +107,11 @@ fun HabitRow(
         Box(
             Modifier
                 .size(38.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(tint.copy(alpha = 0.14f)),
+                .clip(RoundedCornerShape(10.dp))
+                .background(p.field),
             contentAlignment = Alignment.Center
         ) {
-            AppIcon(habit.iconKind(), tint, size = 21.dp)
+            AppIcon(habit.iconKind(), tint, size = 20.dp)
         }
         Spacer(Modifier.width(12.dp))
         Column(

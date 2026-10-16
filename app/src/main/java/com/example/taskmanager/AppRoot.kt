@@ -80,14 +80,13 @@ fun AppRoot(vm: AppViewModel) {
             }
         ) { padding ->
             when (tab) {
-                0 -> HomeScreen(
+                0 -> TodayScreen(
                     vm = vm,
                     padding = padding,
                     onOpenTask = { id -> stack.add(Screen.Detail(id)) },
                     onOpenHabit = { id -> stack.add(Screen.HabitDetail(id)) },
-                    onOpenHabits = { tab = 1 },
-                    onOpenFocus = { tab = 2 },
-                    onOpenSettings = { stack.add(Screen.Settings) }
+                    onOpenSettings = { stack.add(Screen.Settings) },
+                    onAddTask = { stack.add(Screen.NewTask(vm.selectedDay)) }
                 )
                 1 -> Box(Modifier.padding(bottom = padding.calculateBottomPadding())) {
                     HabitsScreen(

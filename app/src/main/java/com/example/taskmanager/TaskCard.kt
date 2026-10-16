@@ -46,7 +46,7 @@ fun TaskCard(
     Row(
         modifier
             .fillMaxWidth()
-            .cardStyle(p, 18.dp)
+            .cardStyle(p, 16.dp)
             .clickable(onClick = onClick)
             .padding(horizontal = 8.dp, vertical = 9.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -54,9 +54,8 @@ fun TaskCard(
         CheckCircle(task.done, onToggle)
         AppIcon(
             task.iconKind(),
-            if (task.done) p.muted else task.category.color,
-            size = 22.dp,
-            filled = true
+            p.muted,
+            size = 21.dp
         )
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
@@ -72,9 +71,9 @@ fun TaskCard(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
                     Modifier
-                        .size(7.dp)
+                        .size(5.dp)
                         .clip(CircleShape)
-                        .background(task.category.color)
+                        .background(p.muted)
                 )
                 Spacer(Modifier.width(6.dp))
                 Txt(
