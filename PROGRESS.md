@@ -17,8 +17,8 @@ TODO = not started
 | 3 | Create / Edit task (date, time, repeat, category, priority, sub-tasks, attachments, voice notes) | DONE |
 | 4 | Task detail (chips, info, sub-tasks, attachments, Mark as Complete, undo delete) | DONE |
 | 5 | Calendar (month grid with task dots, day list) | DONE |
-| 6 | Progress (Week/Month/Year, ring, stats, daily goal, tasks by category) | PUSHED |
-| 7 | Profile and Habits (theme, daily goal, name, daily habits with streaks) | TODO |
+| 6 | Progress (Week/Month/Year, ring, stats, daily goal, tasks by category) | DONE |
+| 7 | Profile and Habits (theme, daily goal, name, daily habits with streaks) | PUSHED |
 | 8 | Final polish, README, release check | TODO |
 
 ## Part details
@@ -53,10 +53,16 @@ TODO = not started
 - `CalendarScreen.kt`: month grid (Monday first) with category dots, previous / next month,
   today highlight, selected day list using the same task cards; the selected day is shared with Home
 
-### 6. Progress (PUSHED)
+### 6. Progress (DONE)
 - `StatsScreen.kt`: Week / Month / Year switch, week strip with status dots (tap a day to open it
   on Home), completion ring with percent, Completed / Pending / Overdue counts, Daily Goal bar,
   Tasks by Category donut with legend
+
+### 7. Profile and Habits (PUSHED)
+- `ProfileScreen.kt`: name, completed / streak / habit counts, Light / Dark / System, daily goal
+  stepper, link to habits, clear completed
+- `HabitsScreen.kt`: add habits, tick today, streak, best streak, 30 day rate, heatmap, undo delete
+- Habits open from the Home menu and from Profile
 
 ### Notes
 - Everything is stored on the device only.

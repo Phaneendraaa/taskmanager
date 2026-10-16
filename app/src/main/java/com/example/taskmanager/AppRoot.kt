@@ -38,6 +38,7 @@ import kotlinx.coroutines.delay
 /** Full-screen pages that open on top of the tabs. */
 sealed interface Screen {
     data class NewTask(val day: Long?) : Screen
+    data object Habits : Screen
     data class Detail(val id: String) : Screen
     data class EditTask(val id: String) : Screen
 }
@@ -81,7 +82,7 @@ fun AppRoot(vm: AppViewModel) {
                     padding = padding,
                     onOpenTask = { id -> stack.add(Screen.Detail(id)) },
                     onOpenProfile = { tab = 3 },
-                    onOpenHabits = {}
+                    onOpenHabits = { stack.add(Screen.Habits) }
                 )
                 1 -> CalendarScreen(
                     vm = vm,
@@ -93,7 +94,11 @@ fun AppRoot(vm: AppViewModel) {
                     padding = padding,
                     onPickDay = { day -> vm.selectedDay = day; tab = 0 }
                 )
-                else -> ComingSoon(listOf("Home", "Calendar", "Stats", "Profile")[tab], padding)
+                else -> ProfileScreen(
+                    vm = vm,
+                    padding = padding,
+                    onOpenHabits = { stack.add(Screen.Habits) }
+                )
             }
         }
 
@@ -114,6 +119,20 @@ fun AppRoot(vm: AppViewModel) {
                         prefillDay = top.day,
                         today = today,
                         onFinish = { pop() }
+                    )
+                    is Screen.Habits -> HabitsScreen(
+                        vm = vm,
+                        onBack = { pop() },
+                        onDeleted = { h ->
+                            scope.launch {
+                                val r = snackbar.showSnackbar(
+                                    "Habit deleted",
+                                    actionLabel = "Undo",
+                                    duration = SnackbarDuration.Short
+                                )
+                                if (r == SnackbarResult.ActionPerformed) vm.restoreHabit(h)
+                            }
+                        }
                     )
                     is Screen.Detail -> TaskDetail(
                         vm = vm,
@@ -150,34 +169,6 @@ fun AppRoot(vm: AppViewModel) {
                     }
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun ComingSoon(title: String, padding: PaddingValues) {
-    val p = LocalPalette.current
-    Box(
-        Modifier
-            .fillMaxSize()
-            .padding(bottom = padding.calculateBottomPadding())
-            .background(p.bg)
-    ) {
-        HeroArt(
-            Modifier
-                .fillMaxWidth()
-                .height(300.dp)
-        )
-        Column(
-            Modifier
-                .fillMaxSize()
-                .padding(horizontal = 24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Spacer(Modifier.height(340.dp))
-            Txt(title, size = 28.sp, weight = FontWeight.ExtraBold)
-            Spacer(Modifier.height(8.dp))
-            Txt("This screen is being built.", size = 15.sp, color = p.muted)
         }
     }
 }
