@@ -1,9 +1,7 @@
-# Forge redesign progress
+# Redesign progress (v5: calm, focused, sticky)
 
-Goal: rebuild the app as "forge", a habits-first app in the Sage theme (with a matching dark
-theme), following the second reference design. The earlier violet task-manager redesign is
-finished and is kept as the base. Work is split into small parts, each pushed on its own and
-built by GitHub Actions.
+The first forge versions felt cluttered and childish. This rebuild follows `docs/RESEARCH.md`.
+Each part is pushed on its own and built by GitHub Actions.
 
 Install the latest build:
 https://github.com/Phaneendraaa/taskmanager/releases/download/latest/TaskManager.apk
@@ -12,14 +10,13 @@ Legend: DONE = pushed and the build passed, PUSHED = pushed, build being checked
 
 | # | Part | Status |
 |---|------|--------|
-| F1 | Sage light and dark theme, habit model (category, time, days), focus and onboarding storage | DONE |
-| F2 | Onboarding: welcome page and lifestyle questions that build a starter plan | DONE |
-| F3 | Home (5/7 ring, stat chips, Habits / Tasks switch, Today list) and new bottom bar | DONE |
-| F4 | Habits tab (categories, Morning / Afternoon / Evening), Add Habit / Task, Quick Add | DONE |
-| F5 | Habit details (Overview, History, Edit) | DONE |
-| F6 | Focus timer (Focus, Short Break, Long Break) | DONE |
-| F7 | Stats (Overview, Habits, Tasks, Focus, heatmap, categories, focus timeline) | DONE |
-| F8 | Settings (theme, accent variations, daily goal, focus lengths, backup and restore) | DONE |
-| F9 | Habit reminders (notifications), README, release check | DONE |
-
-Earlier work (violet task manager, parts 1 to 8) is in git history before the "Forge" commits.
+| R0 | Research and product spec | PUSHED |
+| R1 | Screenshot harness so spacing and clipped text can be checked | TODO |
+| R2 | Premium design system, calendar removed, four tab navigation | TODO |
+| R3 | Data model: cue, minimum version, identity, priorities, reflections, grace rule | TODO |
+| R4 | Today screen | TODO |
+| R5 | Habits tab, habit detail, simple add flow | TODO |
+| R6 | Focus tab | TODO |
+| R7 | Insights and weekly review | TODO |
+| R8 | Smart notifications | TODO |
+| R9 | Onboarding, settings, polish, README | TODO |
