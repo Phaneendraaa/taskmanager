@@ -336,8 +336,9 @@ private fun ActivityGrid(vm: AppViewModel, today: Long) {
     }
 
     BoxWithConstraints(Modifier.fillMaxWidth()) {
+        val totalW = maxWidth
         val labelW = 18.dp
-        val cell = (maxWidth - labelW - gap * (weeks - 1)) / weeks
+        val cell = (totalW - labelW - gap * (weeks - 1)) / weeks
         Row {
             Column(Modifier.width(labelW), verticalArrangement = Arrangement.spacedBy(gap)) {
                 listOf("M", "T", "W", "T", "F", "S", "S").forEach { l ->
@@ -355,7 +356,7 @@ private fun ActivityGrid(vm: AppViewModel, today: Long) {
                     data.add(if (d > today) null else score(d))
                 }
             }
-            Canvas(Modifier.width(maxWidth - labelW).height(cell * 7 + gap * 6)) {
+            Canvas(Modifier.width(totalW - labelW).height(cell * 7 + gap * 6)) {
                 val c = cell.toPx()
                 val g = gap.toPx()
                 for (w in 0 until weeks) {
@@ -467,7 +468,8 @@ private fun TasksTab(vm: AppViewModel, cur: Span, today: Long, onPickDay: (Long)
     val overdue = inRange.count { !it.done && it.isOverdue(vm.now) }
     val pending = inRange.size - completed - overdue
     val percent = if (inRange.isEmpty()) 0 else completed * 100 / inRange.size
-    val doneToday = vm.tasks.count { val c = it.completedAt; it.done && c != null && epochDayOf(c) == today }
+    val doneToday = vm.tasks.count { val c = it.completedAt; it.done && c != null && epochDayOf(c) == today } +
+        vm.habits.count { today in it.doneDays }
     val goal = vm.dailyGoal
 
     Row(
@@ -495,7 +497,7 @@ private fun TasksTab(vm: AppViewModel, cur: Span, today: Long, onPickDay: (Long)
             AppIcon(Ic.TARGET, p.accent, size = 22.dp)
             Spacer(Modifier.width(10.dp))
             Txt("Daily goal", size = 16.sp, weight = FontWeight.Bold, modifier = Modifier.weight(1f))
-            Txt("$doneToday of $goal tasks", size = 14.sp, color = p.muted)
+            Txt("$doneToday of $goal done today", size = 14.sp, color = p.muted)
         }
         Spacer(Modifier.height(12.dp))
         GradientProgress(
