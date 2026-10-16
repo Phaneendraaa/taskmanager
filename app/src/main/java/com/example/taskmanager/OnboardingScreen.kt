@@ -141,7 +141,42 @@ private val DROPS = listOf(
     DropOption("never", "I rarely get started", "We will make the first step almost effortless")
 )
 
-private val PAGES = listOf("welcome", "name", "why", "identity", "dropoff", "wake", "energy", "starter")
+private class TourCard(val ic: Ic, val title: String, val what: String, val why: String, val sample: List<String>)
+
+private val TOUR = listOf(
+    TourCard(
+        Ic.HOME, "Today: plan, do, review",
+        "Each morning you choose up to three priorities. Your routine sits below, grouped by time of day. In the evening you rate the day in twenty seconds.",
+        "Deciding in advance beats relying on willpower in the moment. The evening check-in turns every day into a small lesson.",
+        listOf("Finish database assignment", "Email project proposal", "Prepare for Friday's exam")
+    ),
+    TourCard(
+        Ic.REPEAT, "Habits that attach to your day",
+        "Every habit can have an anchor (\"After I pour my coffee\"), a minimum version for bad days that still counts, and an identity line about who you are becoming.",
+        "Linking a habit to something you already do makes follow-through far more likely than good intentions alone.",
+        listOf("After I get into bed, I will: Read 10 pages", "Short on time? Read one page")
+    ),
+    TourCard(
+        Ic.CHECK, "Consistency, not perfection",
+        "You will see a 30 day consistency score and a run that forgives one missed day. Miss one and the app simply says: do not miss twice.",
+        "Research on habit formation found a single missed day makes no real difference. Two in a row is where habits quietly die.",
+        listOf("86% over 30 days", "Don't miss twice")
+    ),
+    TourCard(
+        Ic.TIMER, "Focus with a target",
+        "A deep-work timer with a daily target. It keeps running if you leave the app and alerts you when it ends, even with the screen off.",
+        "Protected blocks of focused time are how hard things actually get done. A target makes progress visible.",
+        listOf("25:00  Deep work", "75 of 120 min today")
+    ),
+    TourCard(
+        Ic.CHART, "Insights in plain words",
+        "A weekly review that tells you what is working, your strongest day and time, and one small thing to change next.",
+        "What gets measured honestly gets improved. No streak pressure, just a clear picture.",
+        listOf("83% of habits done, last 7 days", "Best on Wednesdays")
+    )
+)
+
+private val PAGES = listOf("welcome", "name", "why", "identity", "dropoff", "wake", "energy", "tour", "starter")
 
 @Composable
 fun OnboardingScreen(vm: AppViewModel) {
@@ -154,11 +189,15 @@ fun OnboardingScreen(vm: AppViewModel) {
     var identity by remember { mutableStateOf<String?>(null) }
     var dropoff by remember { mutableStateOf<String?>(null) }
     val picked = remember { mutableStateListOf<Int>() }
+    var tourStep by remember { mutableIntStateOf(0) }
     val last = PAGES.size - 1
 
     val plan = buildPlan(WAKE_MINUTES[wake], goals.toList(), ENERGY_MINUTES[energy], 6)
 
-    BackHandler(enabled = page > 0) { page -= 1 }
+    fun back() {
+        if (PAGES[page] == "tour" && tourStep > 0) tourStep -= 1 else page -= 1
+    }
+    BackHandler(enabled = page > 0) { back() }
 
     fun finish() {
         val today = LocalDate.now().toEpochDay()
@@ -206,7 +245,7 @@ fun OnboardingScreen(vm: AppViewModel) {
                     )
                 } else {
                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 14.dp)) {
-                        RoundIconButton(Ic.BACK, onClick = { page -= 1 }, size = 40.dp)
+                        RoundIconButton(Ic.BACK, onClick = { back() }, size = 40.dp)
                         Spacer(Modifier.size(14.dp))
                         Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                             for (i in 1..last) {
@@ -273,6 +312,10 @@ fun OnboardingScreen(vm: AppViewModel) {
                                 OptionCard(label, ENERGY_SUB[i], ENERGY_ICONS[i], energy == i) { energy = i }
                             }
                         }
+                        "tour" -> {
+                            val c = TOUR[tourStep]
+                            Step(c.title, c.what) { TourBody(c, tourStep, TOUR.size) }
+                        }
                         else -> Step(
                             "Start small, or start clean",
                             "One to three habits is plenty. Nothing is added unless you tick it."
@@ -293,13 +336,16 @@ fun OnboardingScreen(vm: AppViewModel) {
                     Spacer(Modifier.height(12.dp))
                     GradientButton(
                         text = when {
+                            PAGES[current] == "tour" -> if (tourStep < TOUR.size - 1) "Next" else "Got it"
                             current != last -> "Continue"
                             picked.isEmpty() -> "Start with a clean slate"
                             picked.size == 1 -> "Begin with 1 habit"
                             else -> "Begin with ${picked.size} habits"
                         },
                         onClick = {
-                            if (current == last) finish() else page = current + 1
+                            if (current == last) finish()
+                            else if (PAGES[current] == "tour" && tourStep < TOUR.size - 1) tourStep += 1
+                            else page = current + 1
                         },
                         modifier = Modifier.fillMaxWidth(),
                         icon = Ic.ARROW_RIGHT,
@@ -465,5 +511,41 @@ private fun PlanRow(s: Suggest, on: Boolean, onClick: () -> Unit) {
             )
         }
         Tick(on)
+    }
+}
+
+@Composable
+private fun TourBody(c: TourCard, step: Int, total: Int) {
+    val p = LocalPalette.current
+    Column(Modifier.fillMaxWidth().cardStyle(p).padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Txt("PREVIEW", size = 11.sp, weight = FontWeight.SemiBold, color = p.muted)
+        c.sample.forEachIndexed { i, line ->
+            Row(
+                Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(p.field).padding(horizontal = 12.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    Modifier.size(20.dp).clip(CircleShape)
+                        .background(if (i == 0) p.accent else Color.Transparent)
+                        .border(1.5.dp, if (i == 0) p.accent else p.muted.copy(alpha = 0.5f), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) { if (i == 0) AppIcon(Ic.CHECK, Color.White, size = 12.dp, stroke = 2.6f) }
+                Spacer(Modifier.size(12.dp))
+                Txt(line, size = 14.sp, weight = FontWeight.Medium)
+            }
+        }
+    }
+    Column(Modifier.fillMaxWidth().cardStyle(p).padding(16.dp)) {
+        Txt("WHY IT WORKS", size = 11.sp, weight = FontWeight.SemiBold, color = p.accentText)
+        Spacer(Modifier.height(6.dp))
+        Txt(c.why, size = 14.sp, lineHeight = 20.sp)
+    }
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+        for (i in 0 until total) {
+            Box(
+                Modifier.padding(horizontal = 3.dp).size(if (i == step) 8.dp else 6.dp).clip(CircleShape)
+                    .background(if (i == step) p.text else p.faint)
+            )
+        }
     }
 }

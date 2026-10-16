@@ -25,6 +25,6 @@ Legend: DONE = pushed and the build passed, DONE = pushed, build being checked, 
 | Part | What | Status |
 |---|---|---|
 | O1 | Clean slate (nothing pre-added), why we are here, identity and drop-off questions | PUSHED |
-| O2 | Guided tour that explains each tab and why it works | TODO |
+| O2 | Guided tour that explains each tab and why it works | PUSHED |
 | O3 | First win, reminders permission, motivation finale | TODO |
 | O4 | Replay the intro from Settings | TODO |
