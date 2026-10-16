@@ -7,12 +7,13 @@ pushed on its own and built by GitHub Actions, so a broken part is easy to find.
 Install the latest build:
 https://github.com/Phaneendraaa/taskmanager/releases/download/latest/TaskManager.apk
 
-Legend: DONE = pushed and building, WIP = being worked on, TODO = not started
+Legend: DONE = pushed and the build passed, PUSHED = pushed, build being checked,
+TODO = not started
 
 | # | Part | Status |
 |---|------|--------|
-| 1 | Design system, data layer, app shell (palette, icons, hero art, components, model, floating nav) | WIP |
-| 2 | Home screen (greeting hero, date strip, category chips, task cards, search) | TODO |
+| 1 | Design system, data layer, app shell (palette, icons, hero art, components, model, floating nav) | DONE |
+| 2 | Home screen (greeting hero, date strip, category chips, task cards, search) | PUSHED |
 | 3 | Create / Edit task (date, time, repeat, category, priority, sub-tasks, attachments, voice notes) | TODO |
 | 4 | Task detail (chips, info, sub-tasks, attachments, Mark as Complete, undo delete) | TODO |
 | 5 | Calendar (month grid with task dots, day list) | TODO |
@@ -22,12 +23,20 @@ Legend: DONE = pushed and building, WIP = being worked on, TODO = not started
 
 ## Part details
 
-### 1. Design system, data layer, app shell
+### 1. Design system, data layer, app shell (DONE)
 - `Theme.kt` light and dark palettes, `Icons.kt` icons drawn in code, `Hero.kt` sunrise illustration
 - `Components.kt` shared pieces (cards, check circle, gradient button, chips, fields, heatmap)
 - `Models.kt` / `AppViewModel.kt`: categories, repeat, sub-tasks, attachments, daily goal, theme, storage
   (old saved tasks still load)
 - `Navigation.kt` floating bottom bar with raised + button
+- Build fix: renamed two functions whose names clashed with property setters
+
+### 2. Home screen (PUSHED)
+- `HomeScreen.kt`: time-based greeting, "Let's make it happen." hero with quote of the day,
+  scrollable date strip, category filter chips, Today list, overdue and anytime sections,
+  search, menu (habits, dark mode, clear completed)
+- Task cards: check circle, icon, category dot, time, high-priority flag, sub-task count
+- The + button and opening a task arrive in parts 3 and 4
 
 ### Notes
 - Everything is stored on the device only.
