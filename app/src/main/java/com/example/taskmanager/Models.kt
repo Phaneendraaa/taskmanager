@@ -366,5 +366,5 @@ fun Habit.cueSentence(): String? {
     val c = cue.trim().trimEnd('.')
     if (c.isEmpty()) return null
     val base = if (c.startsWith("after", ignoreCase = true)) c else "After I $c"
-    return "$base, I will ${name.replaceFirstChar { it.lowercase() }}."
+    return "$base, I will: ${name.trim().trimEnd('.')}."
 }

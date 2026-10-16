@@ -343,15 +343,15 @@ fun TaskForm(
                         Modifier
                             .width(72.dp)
                             .clip(shape)
-                            .background(if (on) c.color else c.color.copy(alpha = 0.14f))
-                            .border(1.dp, if (on) c.color else p.cardBorder, shape)
+                            .background(if (on) p.inverse else p.field)
+                            .border(1.dp, if (on) p.inverse else p.cardBorder, shape)
                             .clickable { category = c }
                             .padding(vertical = 13.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        AppIcon(c.icon, if (on) Color.White else c.color, size = 24.dp, filled = true)
+                        AppIcon(c.icon, if (on) p.onInverse else p.muted, size = 24.dp)
                         Spacer(Modifier.height(7.dp))
-                        Txt(c.label, size = 12.sp, weight = FontWeight.Medium, color = if (on) Color.White else p.text)
+                        Txt(c.label, size = 12.sp, weight = FontWeight.Medium, color = if (on) p.onInverse else p.text, maxLines = 1)
                     }
                 }
             }

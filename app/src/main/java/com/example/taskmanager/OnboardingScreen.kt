@@ -60,6 +60,26 @@ private val ENERGY_SUB = listOf("I do my best work early", "I peak after lunch",
 private val ENERGY_MINUTES = listOf(9 * 60, 14 * 60, 19 * 60)
 private val ENERGY_ICONS = listOf(Ic.SUN, Ic.CLOUD, Ic.MOON)
 
+private class Extras(val cue: String, val minimum: String, val identity: String)
+
+/** Starter habits come with an anchor, a tiny version and an identity so they are easier to keep. */
+private fun extras(name: String): Extras = when (name) {
+    "Wake up on time" -> Extras("", "Get out of bed when the alarm rings", "someone who starts the day on purpose")
+    "Workout" -> Extras("I get home", "Five minutes of movement", "someone who trains consistently")
+    "Drink water" -> Extras("I sit down at my desk", "One glass", "someone who looks after their body")
+    "Healthy breakfast" -> Extras("I wake up", "Something with protein", "someone who fuels well")
+    "Walk 20 minutes" -> Extras("I finish lunch", "Walk around the block", "someone who moves every day")
+    "Read 10 pages" -> Extras("I get into bed", "Read one page", "a reader")
+    "Learn something new" -> Extras("I open my laptop to study", "Ten minutes", "a lifelong learner")
+    "Deep work session" -> Extras("I sit down at my desk", "One 10 minute sprint", "someone who does deep work")
+    "Plan your day" -> Extras("I make my first coffee", "Write one priority", "someone who plans the day")
+    "Meditate" -> Extras("I wake up", "Three slow breaths", "someone who stays calm")
+    "Gratitude note" -> Extras("I brush my teeth", "One line", "someone who notices the good")
+    "Screens off" -> Extras("I set my alarm for tomorrow", "Screens off ten minutes earlier", "someone who protects their sleep")
+    "Lights out" -> Extras("I finish my wind-down", "In bed on time tonight", "someone who protects their sleep")
+    else -> Extras("", "", "")
+}
+
 private fun buildPlan(wake: Int, goals: List<String>, focus: Int, count: Int): List<Suggest> {
     fun at(m: Int): Int = m % 1440
     val chosen = if (goals.isEmpty()) listOf("health", "focus") else goals
@@ -123,6 +143,7 @@ fun OnboardingScreen(vm: AppViewModel) {
         vm.updateDailyGoal(count)
         picked.sorted().forEach { i ->
             val s = plan.getOrNull(i) ?: return@forEach
+            val x = extras(s.name)
             vm.upsertHabit(
                 Habit(
                     id = vm.newId(),
@@ -130,7 +151,10 @@ fun OnboardingScreen(vm: AppViewModel) {
                     createdDay = today,
                     category = s.cat,
                     timeMinute = s.minute,
-                    icon = s.icon.name
+                    icon = s.icon.name,
+                    cue = x.cue,
+                    minimum = x.minimum,
+                    identity = x.identity
                 )
             )
         }
@@ -225,7 +249,7 @@ fun OnboardingScreen(vm: AppViewModel) {
                     }
                     Spacer(Modifier.height(12.dp))
                     GradientButton(
-                        text = if (current == last) "Start forging" else "Continue",
+                        text = if (current == last) "Begin" else "Continue",
                         onClick = {
                             if (current == last) {
                                 finish()
@@ -255,7 +279,7 @@ private fun androidx.compose.foundation.layout.ColumnScope.Welcome(onStart: () -
     Txt("forge", Modifier.fillMaxWidth(), size = 58.sp, weight = FontWeight.Bold, serif = true, align = TextAlign.Center)
     Spacer(Modifier.height(10.dp))
     Txt(
-        "Build a better you\nwith small consistent\nactions.",
+        "A quiet system for\nfocused people.",
         Modifier.fillMaxWidth(),
         size = 17.sp,
         color = p.muted,
@@ -263,11 +287,11 @@ private fun androidx.compose.foundation.layout.ColumnScope.Welcome(onStart: () -
         lineHeight = 24.sp
     )
     Spacer(Modifier.height(40.dp))
-    WelcomeCard(Ic.TARGET, "Habits", "Your daily system.", p.accent)
+    WelcomeCard(Ic.TARGET, "Plan", "Three priorities each morning.")
     Spacer(Modifier.height(12.dp))
-    WelcomeCard(Ic.NOTES, "Tasks", "Stay organized.", Color(0xFFD98B4A))
+    WelcomeCard(Ic.REPEAT, "Practise", "Habits tied to your routine.")
     Spacer(Modifier.height(12.dp))
-    WelcomeCard(Ic.CHART, "Insights", "See real progress.", Color(0xFF7C6BC4))
+    WelcomeCard(Ic.CHART, "Review", "Twenty seconds each evening.")
     Spacer(Modifier.weight(1f))
     GradientButton("Get started", onStart, Modifier.fillMaxWidth(), icon = Ic.ARROW_RIGHT)
     Spacer(Modifier.height(8.dp))
@@ -282,16 +306,16 @@ private fun androidx.compose.foundation.layout.ColumnScope.Welcome(onStart: () -
 }
 
 @Composable
-private fun WelcomeCard(ic: Ic, title: String, sub: String, tint: Color) {
+private fun WelcomeCard(ic: Ic, title: String, sub: String) {
     val p = LocalPalette.current
     Row(
         Modifier.fillMaxWidth().cardStyle(p, 22.dp).padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
-            Modifier.size(46.dp).clip(CircleShape).background(tint.copy(alpha = 0.16f)),
+            Modifier.size(44.dp).clip(RoundedCornerShape(12.dp)).background(p.field),
             contentAlignment = Alignment.Center
-        ) { AppIcon(ic, tint, size = 24.dp) }
+        ) { AppIcon(ic, p.muted, size = 22.dp) }
         Spacer(Modifier.size(14.dp))
         Column {
             Txt(title, size = 16.sp, weight = FontWeight.SemiBold)
@@ -374,9 +398,9 @@ private fun PlanRow(s: Suggest, on: Boolean, onClick: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
-            Modifier.size(42.dp).clip(RoundedCornerShape(14.dp)).background(s.cat.color.copy(alpha = 0.16f)),
+            Modifier.size(42.dp).clip(RoundedCornerShape(12.dp)).background(p.field),
             contentAlignment = Alignment.Center
-        ) { AppIcon(s.icon, s.cat.color, size = 22.dp) }
+        ) { AppIcon(s.icon, p.muted, size = 22.dp) }
         Spacer(Modifier.size(14.dp))
         Column(Modifier.weight(1f)) {
             Txt(s.name, size = 16.sp, weight = FontWeight.SemiBold)

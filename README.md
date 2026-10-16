@@ -1,26 +1,29 @@
 # forge
 
-A habits-first Android app built with Kotlin and Jetpack Compose, in a calm Sage theme with a
-matching dark mode. It works fully offline and everything is stored on the phone.
+A calm, professional habit and focus app for adults and students. Kotlin and Jetpack Compose, paper-and-ink
+design with a graphite dark mode, one restrained accent. Fully offline: everything stays on the phone.
 
 **Install:** https://github.com/Phaneendraaa/taskmanager/releases/download/latest/TaskManager.apk
 
-## Features
-- **Onboarding**: welcome page, a few lifestyle questions (name, wake-up time, goals, best energy
-  window, how many habits) and a starter habit plan you can edit before you begin
-- **Home**: daily ring (done / due habits), day streak, weekly percentage, total habits, and a
-  Habits / Tasks switch with a Today list
-- **Habits**: filter by category, grouped Morning / Afternoon / Evening, tick them off, undo delete
-- **Habit details**: Overview (week, completion, total days, longest streak, heatmap), History
-  (tap any day to fix it) and Edit (category, frequency, time, icon, reminder)
-- **Add Habit / Task**: one screen with a switch, plus Quick Add suggestions and voice input
-- **Tasks**: dates, times, repeat, priority, sub-tasks, attachments, calendar view, Mark as Complete
-- **Focus timer**: Focus, Short Break and Long Break with a ring, current task, saved sessions and
-  adjustable lengths; it keeps running while you look at other screens
-- **Stats**: Overview, Habits, Tasks and Focus tabs for This Week / Month / Year, with activity
-  heatmap, habit categories donut and focus timeline
-- **Settings**: Light / Dark / System, four accent themes (Sage, Sky, Peach, Lavender), daily goal,
-  focus lengths, habit reminders (notifications), backup and restore to a file
+## How it keeps you coming back (see `docs/RESEARCH.md` for the evidence)
+- **Plan, do, review**: pick up to three priorities each morning, work through a routine grouped by
+  time of day, close the day with a twenty second check-in.
+- **Habits tied to cues**: every habit can have an anchor ("After I ..."), a minimum version for bad
+  days that still counts, and an identity line.
+- **Consistency over streaks**: a 30 day consistency score and a run that forgives one missed day.
+  Miss one and the app says "Don't miss twice".
+- **Graduation**: after about 66 days at high consistency a habit is marked Automatic.
+- **Insights in plain words**: weekly review, best weekday and time of day, per-habit consistency,
+  deep work minutes against your daily target.
+- **Notifications that help**: Done and Snooze buttons on reminders, a morning planning nudge,
+  an evening note about what is still open, and a focus-finished alert with the screen off.
+
+## Screens
+Today, Habits, Focus, Insights (bottom tabs). Settings opens from the gear on Today. No calendar.
+
+## Other
+Tasks with dates, repeat, priority, sub-tasks and attachments; Light, Dark or System theme; three sober
+accents (Verdigris, Slate, Brass); backup and restore to a file.
 
 ## Build
 Every push to `main` is built by GitHub Actions (`.github/workflows/build-apk.yml`) and the APK is

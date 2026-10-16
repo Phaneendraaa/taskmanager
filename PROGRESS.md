@@ -19,4 +19,4 @@ Legend: DONE = pushed and the build passed, DONE = pushed, build being checked, 
 | R6 | Focus tab | PUSHED |
 | R7 | Insights and weekly review | PUSHED |
 | R8 | Smart notifications | PUSHED |
-| R9 | Onboarding, settings, polish, README | TODO |
+| R9 | Onboarding, settings, polish, README | PUSHED |

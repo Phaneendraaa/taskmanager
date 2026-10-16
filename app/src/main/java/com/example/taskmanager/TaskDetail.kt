@@ -303,16 +303,17 @@ fun TaskDetail(
 @Composable
 private fun InfoChip(label: String, color: Color, ic: Ic) {
     val shape = RoundedCornerShape(50)
+    val tone = LocalPalette.current.muted
     Row(
         Modifier
             .clip(shape)
-            .background(color.copy(alpha = 0.15f))
+            .background(LocalPalette.current.field)
             .padding(horizontal = 12.dp, vertical = 7.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        AppIcon(ic, color, size = 16.dp, filled = true)
+        AppIcon(ic, tone, size = 16.dp)
         Spacer(Modifier.width(6.dp))
-        Txt(label, size = 13.sp, weight = FontWeight.Medium, color = color)
+        Txt(label, size = 13.sp, weight = FontWeight.Medium, color = LocalPalette.current.text)
     }
 }
 
