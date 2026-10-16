@@ -58,12 +58,12 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         prefs.edit().putString("theme", mode).apply()
     }
 
-    fun setDailyGoal(goal: Int) {
+    fun updateDailyGoal(goal: Int) {
         dailyGoal = goal.coerceIn(1, 30)
         prefs.edit().putInt("goal", dailyGoal).apply()
     }
 
-    fun setUserName(name: String) {
+    fun updateUserName(name: String) {
         userName = name.take(24)
         prefs.edit().putString("name", userName).apply()
     }
