@@ -102,7 +102,8 @@ fun AppRoot(vm: AppViewModel) {
                 else -> ProfileScreen(
                     vm = vm,
                     padding = padding,
-                    onOpenHabits = { stack.add(Screen.Habits) }
+                    onOpenHabits = { stack.add(Screen.Habits) },
+                    onOpenFocus = { stack.add(Screen.Focus) }
                 )
             }
         }

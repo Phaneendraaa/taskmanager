@@ -278,29 +278,7 @@ fun FocusScreen(vm: AppViewModel, onClose: () -> Unit) {
         )
     }
 
-    if (settings) {
-        var f by remember { mutableLongStateOf(vm.focusLen.toLong()) }
-        var s by remember { mutableLongStateOf(vm.shortLen.toLong()) }
-        var l by remember { mutableLongStateOf(vm.longLen.toLong()) }
-        AlertDialog(
-            onDismissRequest = { settings = false },
-            title = { Text("Timer lengths") },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    LenRow("Focus", f.toInt(), { f = (f - 5).coerceAtLeast(5) }, { f = (f + 5).coerceAtMost(90) })
-                    LenRow("Short break", s.toInt(), { s = (s - 1).coerceAtLeast(1) }, { s = (s + 1).coerceAtMost(30) })
-                    LenRow("Long break", l.toInt(), { l = (l - 5).coerceAtLeast(5) }, { l = (l + 5).coerceAtMost(60) })
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    vm.updateFocusLengths(f.toInt(), s.toInt(), l.toInt())
-                    settings = false
-                }) { Text("Save") }
-            },
-            dismissButton = { TextButton(onClick = { settings = false }) { Text("Cancel") } }
-        )
-    }
+    if (settings) FocusLengthsDialog(vm) { settings = false }
 }
 
 @Composable
@@ -327,7 +305,7 @@ private fun DialogRow(text: String, selected: Boolean, onClick: () -> Unit) {
 }
 
 @Composable
-private fun LenRow(label: String, value: Int, onMinus: () -> Unit, onPlus: () -> Unit) {
+fun LenRow(label: String, value: Int, onMinus: () -> Unit, onPlus: () -> Unit, unit: String = "min") {
     val p = LocalPalette.current
     Row(verticalAlignment = Alignment.CenterVertically) {
         Txt(label, size = 15.sp, modifier = Modifier.weight(1f))
@@ -335,10 +313,35 @@ private fun LenRow(label: String, value: Int, onMinus: () -> Unit, onPlus: () ->
             Modifier.size(34.dp).clip(CircleShape).background(p.field).clickable(onClick = onMinus),
             contentAlignment = Alignment.Center
         ) { Txt("-", size = 20.sp, weight = FontWeight.Bold, color = p.accent) }
-        Txt("$value min", Modifier.width(70.dp), size = 15.sp, weight = FontWeight.SemiBold, align = TextAlign.Center)
+        Txt("$value $unit", Modifier.width(70.dp), size = 15.sp, weight = FontWeight.SemiBold, align = TextAlign.Center)
         Box(
             Modifier.size(34.dp).clip(CircleShape).background(p.field).clickable(onClick = onPlus),
             contentAlignment = Alignment.Center
         ) { Txt("+", size = 20.sp, weight = FontWeight.Bold, color = p.accent) }
     }
+}
+
+@Composable
+fun FocusLengthsDialog(vm: AppViewModel, onDismiss: () -> Unit) {
+    var f by remember { mutableLongStateOf(vm.focusLen.toLong()) }
+    var s by remember { mutableLongStateOf(vm.shortLen.toLong()) }
+    var l by remember { mutableLongStateOf(vm.longLen.toLong()) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Timer lengths") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                LenRow("Focus", f.toInt(), { f = (f - 5).coerceAtLeast(5) }, { f = (f + 5).coerceAtMost(90) })
+                LenRow("Short break", s.toInt(), { s = (s - 1).coerceAtLeast(1) }, { s = (s + 1).coerceAtMost(30) })
+                LenRow("Long break", l.toInt(), { l = (l - 5).coerceAtLeast(5) }, { l = (l + 5).coerceAtMost(60) })
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                vm.updateFocusLengths(f.toInt(), s.toInt(), l.toInt())
+                onDismiss()
+            }) { Text("Save") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+    )
 }

@@ -55,6 +55,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     var userName by mutableStateOf(prefs.getString("name", "") ?: "")
         private set
 
+    var accentKey by mutableStateOf(prefs.getString("accent", "sage") ?: "sage")
+        private set
+
     var now by mutableStateOf(LocalDateTime.now())
         private set
 
@@ -91,6 +94,65 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun updateUserName(name: String) {
         userName = name.take(24)
         prefs.edit().putString("name", userName).apply()
+    }
+
+    fun updateAccent(key: String) {
+        accentKey = key
+        prefs.edit().putString("accent", key).apply()
+    }
+
+    /** Everything stored on this phone as one JSON text, for backup. */
+    fun exportBackup(): String {
+        val o = JSONObject()
+        for ((k, v) in prefs.all) {
+            if (v is String || v is Int || v is Long || v is Boolean) o.put(k, v)
+        }
+        return o.toString(2)
+    }
+
+    /** Replaces everything with a backup made by [exportBackup]. Returns false if the text is not a backup. */
+    fun importBackup(text: String): Boolean {
+        try {
+            val o = JSONObject(text)
+            if (!(o.has("list") || o.has("habits") || o.has("focus") || o.has("name") || o.has("goal"))) return false
+            val e = prefs.edit()
+            e.clear()
+            val keys = o.keys()
+            while (keys.hasNext()) {
+                val k = keys.next()
+                val v = o.get(k)
+                if (v is String) e.putString(k, v)
+                else if (v is Int) e.putInt(k, v)
+                else if (v is Long) e.putLong(k, v)
+                else if (v is Boolean) e.putBoolean(k, v)
+            }
+            e.putBoolean("onboarded", true)
+            e.apply()
+            reloadAll()
+            return true
+        } catch (e: Exception) {
+            return false
+        }
+    }
+
+    private fun reloadAll() {
+        tasks.clear()
+        tasks.addAll(loadTasks())
+        habits.clear()
+        habits.addAll(loadHabits())
+        focusSessions.clear()
+        focusSessions.addAll(loadFocus())
+        themeMode = prefs.getString("theme", "light") ?: "light"
+        accentKey = prefs.getString("accent", "sage") ?: "sage"
+        dailyGoal = prefs.getInt("goal", 5).coerceIn(1, 30)
+        userName = prefs.getString("name", "") ?: ""
+        onboarded = prefs.getBoolean("onboarded", true)
+        focusLen = prefs.getInt("focusLen", 25)
+        shortLen = prefs.getInt("shortLen", 5)
+        longLen = prefs.getInt("longLen", 15)
+        timerRunning = false
+        focusMode = 0
+        timerLeftMs = focusLen * 60_000L
     }
 
     fun finishOnboarding() {
