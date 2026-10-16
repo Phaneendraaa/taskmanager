@@ -149,6 +149,10 @@ fun TodayScreen(
                                 if (vm.userName.isBlank()) greeting else "$greeting, ${vm.userName.trim()}",
                                 size = 26.sp, weight = FontWeight.SemiBold, serif = true, lineHeight = 32.sp
                             )
+                            if (vm.identity.isNotBlank()) {
+                                Spacer(Modifier.height(4.dp))
+                                Txt("You are becoming " + vm.identity.trim().trimEnd('.') + ".", size = 13.sp, color = p.muted, lineHeight = 18.sp)
+                            }
                         }
                         RoundIconButton(Ic.SEARCH, onClick = { searching = true }, bordered = false, bg = androidx.compose.ui.graphics.Color.Transparent)
                         RoundIconButton(Ic.PLUS, onClick = onAddTask, bordered = false, bg = androidx.compose.ui.graphics.Color.Transparent)

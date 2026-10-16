@@ -121,6 +121,28 @@ private fun buildPlan(wake: Int, goals: List<String>, focus: Int, count: Int): L
     return out
 }
 
+private class IdOption(val key: String, val phrase: String, val title: String, val ic: Ic)
+
+private val IDENTITIES = listOf(
+    IdOption("student", "a focused student", "A focused student", Ic.BOOK),
+    IdOption("strong", "a healthy, strong person", "A healthy, strong person", Ic.DUMBBELL),
+    IdOption("learner", "a reader and lifelong learner", "A reader and learner", Ic.LAPTOP),
+    IdOption("calm", "someone calm and steady", "A calm, steady mind", Ic.LEAF),
+    IdOption("builder", "a builder who finishes things", "A builder who ships", Ic.TARGET),
+    IdOption("rested", "someone who protects their sleep", "A well-rested person", Ic.MOON)
+)
+
+private class DropOption(val key: String, val title: String, val sub: String)
+
+private val DROPS = listOf(
+    DropOption("early", "After the first few days", "We will keep the start tiny and steady"),
+    DropOption("busy", "When life gets busy", "Every habit gets a minimum version for bad days"),
+    DropOption("boring", "When it stops feeling new", "We will show real progress so it stays meaningful"),
+    DropOption("never", "I rarely get started", "We will make the first step almost effortless")
+)
+
+private val PAGES = listOf("welcome", "name", "why", "identity", "dropoff", "wake", "energy", "starter")
+
 @Composable
 fun OnboardingScreen(vm: AppViewModel) {
     val p = LocalPalette.current
@@ -129,18 +151,21 @@ fun OnboardingScreen(vm: AppViewModel) {
     var wake by remember { mutableIntStateOf(1) }
     val goals = remember { mutableStateListOf<String>() }
     var energy by remember { mutableIntStateOf(0) }
-    var count by remember { mutableIntStateOf(5) }
+    var identity by remember { mutableStateOf<String?>(null) }
+    var dropoff by remember { mutableStateOf<String?>(null) }
     val picked = remember { mutableStateListOf<Int>() }
-    val last = 6
+    val last = PAGES.size - 1
 
-    val plan = buildPlan(WAKE_MINUTES[wake], goals.toList(), ENERGY_MINUTES[energy], count)
+    val plan = buildPlan(WAKE_MINUTES[wake], goals.toList(), ENERGY_MINUTES[energy], 6)
 
     BackHandler(enabled = page > 0) { page -= 1 }
 
     fun finish() {
         val today = LocalDate.now().toEpochDay()
         if (name.isNotBlank()) vm.updateUserName(name.trim())
-        vm.updateDailyGoal(count)
+        val idPhrase = IDENTITIES.firstOrNull { it.key == identity }?.phrase ?: ""
+        vm.updateIdentity(idPhrase)
+        vm.updateDropoff(dropoff ?: "")
         picked.sorted().forEach { i ->
             val s = plan.getOrNull(i) ?: return@forEach
             val x = extras(s.name)
@@ -164,7 +189,7 @@ fun OnboardingScreen(vm: AppViewModel) {
     Box(
         Modifier
             .fillMaxSize()
-            .background(Brush.verticalGradient(listOf(p.glow, p.bg, p.bg)))
+            .background(p.bg)
     ) {
         Crossfade(targetState = page, label = "onboarding") { current ->
             Column(
@@ -183,22 +208,22 @@ fun OnboardingScreen(vm: AppViewModel) {
                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 14.dp)) {
                         RoundIconButton(Ic.BACK, onClick = { page -= 1 }, size = 40.dp)
                         Spacer(Modifier.size(14.dp))
-                        Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                        Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                             for (i in 1..last) {
                                 Box(
                                     Modifier
                                         .weight(1f)
-                                        .height(4.dp)
+                                        .height(3.dp)
                                         .clip(CircleShape)
-                                        .background(if (i <= current) p.accent else p.faint)
+                                        .background(if (i <= current) p.text else p.faint)
                                 )
                             }
                         }
                     }
                     Spacer(Modifier.height(26.dp))
-                    when (current) {
-                        1 -> Step("What should we call you?", "Just a first name is fine.") {
-                            Column(Modifier.fillMaxWidth().cardStyle(p, 20.dp).padding(horizontal = 18.dp, vertical = 14.dp)) {
+                    when (PAGES[current]) {
+                        "name" -> Step("What should we call you?", "Just a first name is fine.") {
+                            Column(Modifier.fillMaxWidth().cardStyle(p).padding(horizontal = 18.dp, vertical = 14.dp)) {
                                 PlainField(
                                     value = name,
                                     onValueChange = { name = it.take(24) },
@@ -208,62 +233,82 @@ fun OnboardingScreen(vm: AppViewModel) {
                                     singleLine = true,
                                     autoFocus = true,
                                     imeAction = ImeAction.Done,
-                                    onDone = { page = 2 }
+                                    onDone = { page = current + 1 }
                                 )
                             }
                         }
-                        2 -> Step("When do you usually wake up?", "We will plan your morning around it.") {
-                            WAKE_LABELS.forEachIndexed { i, label ->
-                                OptionCard(label, null, if (i < 2) Ic.SUN else Ic.CLOUD, wake == i) { wake = i }
-                            }
-                        }
-                        3 -> Step("What do you want to build?", "Pick as many as you like.") {
+                        "why" -> Step(
+                            if (name.isBlank()) "What do you want more of?" else name.trim() + ", what do you want more of?",
+                            "Pick as many as you like. This shapes your suggestions."
+                        ) {
                             GOALS.forEach { g ->
                                 OptionCard(g.title, g.sub, g.ic, g.key in goals) {
                                     if (g.key in goals) goals.remove(g.key) else goals.add(g.key)
                                 }
                             }
                         }
-                        4 -> Step("When is your energy highest?", "Focus habits go in your best window.") {
+                        "identity" -> Step(
+                            "A year from now, who are you?",
+                            "Habits last when they are about who you are, not only what you do."
+                        ) {
+                            IDENTITIES.forEach { o ->
+                                OptionCard(o.title, null, o.ic, identity == o.key) { identity = o.key }
+                            }
+                        }
+                        "dropoff" -> Step(
+                            "Be honest: when do you usually quit?",
+                            "Nearly everyone does. Knowing when lets us plan for it."
+                        ) {
+                            DROPS.forEach { o ->
+                                OptionCard(o.title, o.sub, Ic.TARGET, dropoff == o.key) { dropoff = o.key }
+                            }
+                        }
+                        "wake" -> Step("When do you usually wake up?", "We will plan your morning around it.") {
+                            WAKE_LABELS.forEachIndexed { i, label ->
+                                OptionCard(label, null, if (i < 2) Ic.SUN else Ic.CLOUD, wake == i) { wake = i }
+                            }
+                        }
+                        "energy" -> Step("When is your energy highest?", "Focus habits go in your best window.") {
                             ENERGY_LABELS.forEachIndexed { i, label ->
                                 OptionCard(label, ENERGY_SUB[i], ENERGY_ICONS[i], energy == i) { energy = i }
                             }
                         }
-                        5 -> Step("How many habits to start with?", "Start small. You can add more any time.") {
-                            listOf(3, 5, 7).forEach { n ->
-                                val sub = when (n) {
-                                    3 -> "Gentle and easy to keep"
-                                    5 -> "A balanced daily routine"
-                                    else -> "For a full, structured day"
-                                }
-                                OptionCard("$n habits a day", sub, Ic.TARGET, count == n) { count = n }
-                            }
-                        }
-                        else -> Step("Your starter plan", "Untick anything you do not want.") {
+                        else -> Step(
+                            "Start small, or start clean",
+                            "One to three habits is plenty. Nothing is added unless you tick it."
+                        ) {
                             plan.forEachIndexed { i, s ->
                                 PlanRow(s, i in picked) {
                                     if (i in picked) picked.remove(i) else picked.add(i)
                                 }
                             }
+                            if (picked.size > 3) {
+                                Txt(
+                                    "That is a lot to begin with. People who start with two or three tend to keep going.",
+                                    size = 13.sp, color = p.muted, lineHeight = 18.sp
+                                )
+                            }
                         }
                     }
                     Spacer(Modifier.height(12.dp))
                     GradientButton(
-                        text = if (current == last) "Begin" else "Continue",
+                        text = when {
+                            current != last -> "Continue"
+                            picked.isEmpty() -> "Start with a clean slate"
+                            picked.size == 1 -> "Begin with 1 habit"
+                            else -> "Begin with ${picked.size} habits"
+                        },
                         onClick = {
-                            if (current == last) {
-                                finish()
-                            } else {
-                                if (current == 5) {
-                                    picked.clear()
-                                    plan.indices.forEach { picked.add(it) }
-                                }
-                                page = current + 1
-                            }
+                            if (current == last) finish() else page = current + 1
                         },
                         modifier = Modifier.fillMaxWidth(),
                         icon = Ic.ARROW_RIGHT,
-                        enabled = current != 3 || goals.isNotEmpty()
+                        enabled = when (PAGES[current]) {
+                            "why" -> goals.isNotEmpty()
+                            "identity" -> identity != null
+                            "dropoff" -> dropoff != null
+                            else -> true
+                        }
                     )
                     Spacer(Modifier.height(18.dp))
                 }
@@ -275,28 +320,37 @@ fun OnboardingScreen(vm: AppViewModel) {
 @Composable
 private fun androidx.compose.foundation.layout.ColumnScope.Welcome(onStart: () -> Unit, onSkip: () -> Unit) {
     val p = LocalPalette.current
-    Spacer(Modifier.height(64.dp))
-    Txt("forge", Modifier.fillMaxWidth(), size = 58.sp, weight = FontWeight.Bold, serif = true, align = TextAlign.Center)
-    Spacer(Modifier.height(10.dp))
+    Spacer(Modifier.height(56.dp))
+    Txt("forge", Modifier.fillMaxWidth(), size = 52.sp, weight = FontWeight.SemiBold, serif = true, align = TextAlign.Center)
+    Spacer(Modifier.height(14.dp))
     Txt(
-        "A quiet system for\nfocused people.",
+        "Most people do not fail because they lack motivation. They fail because they have no system.",
         Modifier.fillMaxWidth(),
         size = 17.sp,
+        color = p.text,
+        align = TextAlign.Center,
+        lineHeight = 25.sp
+    )
+    Spacer(Modifier.height(10.dp))
+    Txt(
+        "A few honest questions, then a clean slate. Nothing is added unless you choose it.",
+        Modifier.fillMaxWidth(),
+        size = 14.sp,
         color = p.muted,
         align = TextAlign.Center,
-        lineHeight = 24.sp
+        lineHeight = 20.sp
     )
-    Spacer(Modifier.height(40.dp))
+    Spacer(Modifier.height(32.dp))
     WelcomeCard(Ic.TARGET, "Plan", "Three priorities each morning.")
     Spacer(Modifier.height(12.dp))
     WelcomeCard(Ic.REPEAT, "Practise", "Habits tied to your routine.")
     Spacer(Modifier.height(12.dp))
     WelcomeCard(Ic.CHART, "Review", "Twenty seconds each evening.")
     Spacer(Modifier.weight(1f))
-    GradientButton("Get started", onStart, Modifier.fillMaxWidth(), icon = Ic.ARROW_RIGHT)
+    GradientButton("Begin", onStart, Modifier.fillMaxWidth(), icon = Ic.ARROW_RIGHT)
     Spacer(Modifier.height(8.dp))
     Txt(
-        "Skip for now",
+        "Skip, I will set up myself",
         Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable(onClick = onSkip).padding(12.dp),
         size = 14.sp,
         color = p.muted,

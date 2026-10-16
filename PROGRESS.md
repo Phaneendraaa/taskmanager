@@ -20,3 +20,11 @@ Legend: DONE = pushed and the build passed, DONE = pushed, build being checked, 
 | R7 | Insights and weekly review | DONE |
 | R8 | Smart notifications | DONE |
 | R9 | Onboarding, settings, polish, README | DONE |
+
+## Onboarding rework
+| Part | What | Status |
+|---|---|---|
+| O1 | Clean slate (nothing pre-added), why we are here, identity and drop-off questions | PUSHED |
+| O2 | Guided tour that explains each tab and why it works | TODO |
+| O3 | First win, reminders permission, motivation finale | TODO |
+| O4 | Replay the intro from Settings | TODO |

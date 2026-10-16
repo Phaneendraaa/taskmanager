@@ -49,6 +49,13 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         private set
     var focusLabel by mutableStateOf("")
 
+    /** Who the person wants to become, from onboarding. Shown on Today as a quiet reminder. */
+    var identity by mutableStateOf(prefs.getString("identity", "") ?: "")
+        private set
+
+    /** When the person says they usually quit: "early", "busy", "boring" or "never". */
+    val dropoff: String get() = prefs.getString("dropoff", "") ?: ""
+
     /** Daily deep-work goal in minutes. */
     var focusTarget by mutableIntStateOf(prefs.getInt("focusTarget", 120))
         private set
@@ -91,6 +98,15 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             habits.clear()
             habits.addAll(fresh)
         }
+    }
+
+    fun updateIdentity(text: String) {
+        identity = text.take(60)
+        prefs.edit().putString("identity", identity).apply()
+    }
+
+    fun updateDropoff(key: String) {
+        prefs.edit().putString("dropoff", key).apply()
     }
 
     fun newId(): String = UUID.randomUUID().toString()
@@ -177,6 +193,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         accentKey = prefs.getString("accent", "sage") ?: "sage"
         dailyGoal = prefs.getInt("goal", 5).coerceIn(1, 30)
         userName = prefs.getString("name", "") ?: ""
+        identity = prefs.getString("identity", "") ?: ""
         onboarded = prefs.getBoolean("onboarded", true)
         focusLen = prefs.getInt("focusLen", 25)
         shortLen = prefs.getInt("shortLen", 5)
