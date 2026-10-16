@@ -184,7 +184,7 @@ fun ProfileScreen(
             Spacer(Modifier.width(14.dp))
             Column(Modifier.weight(1f)) {
                 Txt("Reminders and nudges", size = 16.sp, weight = FontWeight.SemiBold)
-                Txt("Habit times, morning plan, evening check", size = 12.sp, color = p.muted, maxLines = 1)
+                Txt("Habit times and daily nudges", size = 12.sp, color = p.muted, maxLines = 1)
             }
             Switch(
                 checked = vm.remindersOn,
