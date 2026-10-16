@@ -15,8 +15,8 @@ TODO = not started
 | 1 | Design system, data layer, app shell (palette, icons, hero art, components, model, floating nav) | DONE |
 | 2 | Home screen (greeting hero, date strip, category chips, task cards, search) | DONE |
 | 3 | Create / Edit task (date, time, repeat, category, priority, sub-tasks, attachments, voice notes) | DONE |
-| 4 | Task detail (chips, info, sub-tasks, attachments, Mark as Complete, undo delete) | PUSHED |
-| 5 | Calendar (month grid with task dots, day list) | TODO |
+| 4 | Task detail (chips, info, sub-tasks, attachments, Mark as Complete, undo delete) | DONE |
+| 5 | Calendar (month grid with task dots, day list) | PUSHED |
 | 6 | Progress (Week/Month/Year, ring, stats, daily goal, tasks by category) | TODO |
 | 7 | Profile and Habits (theme, daily goal, name, daily habits with streaks) | TODO |
 | 8 | Final polish, README, release check | TODO |
@@ -44,10 +44,14 @@ TODO = not started
 - `AppRoot.kt`: pages open on top of the tabs, system back closes them; + opens a new task
   for the selected day, tapping a task opens it for editing (the detail page comes in part 4)
 
-### 4. Task detail (PUSHED)
+### 4. Task detail (DONE)
 - `TaskDetail.kt`: back / edit / more, big checkbox with title and flag, category and priority
   chips, date, time range, repeat, description, sub-tasks with progress, attachments, Mark as Complete
 - Tapping a task opens the detail; Edit opens the form; Delete shows an Undo bar
+
+### 5. Calendar (PUSHED)
+- `CalendarScreen.kt`: month grid (Monday first) with category dots, previous / next month,
+  today highlight, selected day list using the same task cards; the selected day is shared with Home
 
 ### Notes
 - Everything is stored on the device only.

@@ -83,6 +83,11 @@ fun AppRoot(vm: AppViewModel) {
                     onOpenProfile = { tab = 3 },
                     onOpenHabits = {}
                 )
+                1 -> CalendarScreen(
+                    vm = vm,
+                    padding = padding,
+                    onOpenTask = { id -> stack.add(Screen.Detail(id)) }
+                )
                 else -> ComingSoon(listOf("Home", "Calendar", "Stats", "Profile")[tab], padding)
             }
         }
