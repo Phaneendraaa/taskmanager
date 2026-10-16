@@ -19,7 +19,7 @@ Legend: DONE = pushed and the build passed, PUSHED = pushed, build being checked
 | F5 | Habit details (Overview, History, Edit) | DONE |
 | F6 | Focus timer (Focus, Short Break, Long Break) | DONE |
 | F7 | Stats (Overview, Habits, Tasks, Focus, heatmap, categories, focus timeline) | DONE |
-| F8 | Settings (theme, accent variations, daily goal, focus lengths, backup and restore) | PUSHED |
-| F9 | Habit reminders (notifications), README, release check | TODO |
+| F8 | Settings (theme, accent variations, daily goal, focus lengths, backup and restore) | DONE |
+| F9 | Habit reminders (notifications), README, release check | PUSHED |
 
 Earlier work (violet task manager, parts 1 to 8) is in git history before the "Forge" commits.

@@ -1,6 +1,9 @@
 package com.example.taskmanager
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -25,6 +28,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -63,6 +68,9 @@ fun ProfileScreen(
 
     fun toast(text: String) = Toast.makeText(context, text, Toast.LENGTH_SHORT).show()
 
+    val notifPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) vm.updateReminders(true) else toast("Allow notifications for forge to get reminders")
+    }
     val backup = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri: Uri? ->
         if (uri != null) {
             try {
@@ -157,6 +165,40 @@ fun ProfileScreen(
 
         Spacer(Modifier.height(22.dp))
         SettingsRow(Ic.TARGET, "Daily goal", "${vm.dailyGoal} habits and tasks per day") { goalDialog = true }
+        Spacer(Modifier.height(10.dp))
+        Row(
+            Modifier.fillMaxWidth().cardStyle(p, 20.dp).padding(start = 16.dp, end = 12.dp, top = 12.dp, bottom = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                Modifier.size(40.dp).clip(RoundedCornerShape(12.dp)).background(p.accent.copy(alpha = 0.12f)),
+                contentAlignment = Alignment.Center
+            ) { AppIcon(Ic.BELL, p.accent, size = 22.dp) }
+            Spacer(Modifier.width(14.dp))
+            Column(Modifier.weight(1f)) {
+                Txt("Reminders", size = 16.sp, weight = FontWeight.SemiBold)
+                Txt("Notify at each habit's time", size = 12.sp, color = p.muted, maxLines = 1)
+            }
+            Switch(
+                checked = vm.remindersOn,
+                onCheckedChange = { on ->
+                    if (on && Build.VERSION.SDK_INT >= 33 &&
+                        context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+                    ) {
+                        notifPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    } else {
+                        vm.updateReminders(on)
+                    }
+                },
+                colors = SwitchDefaults.colors(
+                    checkedTrackColor = p.accent,
+                    checkedThumbColor = Color.White,
+                    uncheckedTrackColor = p.faint,
+                    uncheckedThumbColor = Color.White,
+                    uncheckedBorderColor = p.faint
+                )
+            )
+        }
         Spacer(Modifier.height(10.dp))
         SettingsRow(Ic.REPEAT, "Habits", "${vm.habits.size} habits, manage and edit", onOpenHabits)
         Spacer(Modifier.height(10.dp))

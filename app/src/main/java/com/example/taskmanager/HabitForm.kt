@@ -1,7 +1,10 @@
 package com.example.taskmanager
 
+import android.Manifest
 import android.app.Activity
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.speech.RecognizerIntent
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -27,6 +30,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -52,13 +57,15 @@ class HabitDraft(h: Habit?) {
     var mask by mutableIntStateOf(h?.daysMask ?: 127)
     var minute by mutableStateOf<Int?>(h?.timeMinute)
     var icon by mutableStateOf(h?.icon ?: "")
+    var reminder by mutableStateOf(h?.reminder ?: false)
 
     fun applyTo(base: Habit): Habit = base.copy(
         name = name.trim(),
         category = category,
         daysMask = mask,
         timeMinute = minute,
-        icon = icon
+        icon = icon,
+        reminder = reminder && minute != null
     )
 }
 
@@ -78,6 +85,14 @@ fun SmallLabel(text: String) {
 fun HabitFields(d: HabitDraft, onMic: (() -> Unit)? = null) {
     val p = LocalPalette.current
     var showTime by remember { mutableStateOf(false) }
+    val ctx = LocalContext.current
+    val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) {
+            d.reminder = true
+        } else {
+            Toast.makeText(ctx, "Allow notifications for forge to get reminders", Toast.LENGTH_LONG).show()
+        }
+    }
     val frequency = when (d.mask) {
         127 -> 0
         31 -> 1
@@ -192,6 +207,44 @@ fun HabitFields(d: HabitDraft, onMic: (() -> Unit)? = null) {
             )
         } else {
             AppIcon(Ic.CHEVRON_RIGHT, p.muted, size = 18.dp)
+        }
+    }
+
+    if (d.minute != null) {
+        Spacer(Modifier.height(12.dp))
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(18.dp))
+                .background(p.field)
+                .border(1.dp, p.cardBorder, RoundedCornerShape(18.dp))
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            AppIcon(Ic.BELL, p.accent, size = 20.dp)
+            Spacer(Modifier.width(12.dp))
+            Txt("Remind me at this time", size = 15.sp, weight = FontWeight.Medium, modifier = Modifier.weight(1f))
+            Switch(
+                checked = d.reminder,
+                onCheckedChange = { on ->
+                    if (!on) {
+                        d.reminder = false
+                    } else if (Build.VERSION.SDK_INT >= 33 &&
+                        ctx.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+                    ) {
+                        permission.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    } else {
+                        d.reminder = true
+                    }
+                },
+                colors = SwitchDefaults.colors(
+                    checkedTrackColor = p.accent,
+                    checkedThumbColor = Color.White,
+                    uncheckedTrackColor = p.faint,
+                    uncheckedThumbColor = Color.White,
+                    uncheckedBorderColor = p.faint
+                )
+            )
         }
     }
 

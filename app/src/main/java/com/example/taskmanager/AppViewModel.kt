@@ -58,6 +58,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     var accentKey by mutableStateOf(prefs.getString("accent", "sage") ?: "sage")
         private set
 
+    var remindersOn by mutableStateOf(prefs.getBoolean("remindersOn", true))
+        private set
+
     var now by mutableStateOf(LocalDateTime.now())
         private set
 
@@ -68,6 +71,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         tasks.addAll(loadTasks())
         habits.addAll(loadHabits())
         focusSessions.addAll(loadFocus())
+        Reminders.sync(getApplication<Application>(), habits, remindersOn)
     }
 
     fun newId(): String = UUID.randomUUID().toString()
@@ -94,6 +98,12 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun updateUserName(name: String) {
         userName = name.take(24)
         prefs.edit().putString("name", userName).apply()
+    }
+
+    fun updateReminders(on: Boolean) {
+        remindersOn = on
+        prefs.edit().putBoolean("remindersOn", on).apply()
+        Reminders.sync(getApplication<Application>(), habits, on)
     }
 
     fun updateAccent(key: String) {
@@ -153,6 +163,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         timerRunning = false
         focusMode = 0
         timerLeftMs = focusLen * 60_000L
+        remindersOn = prefs.getBoolean("remindersOn", true)
+        Reminders.sync(getApplication<Application>(), habits, remindersOn)
     }
 
     fun finishOnboarding() {
@@ -505,6 +517,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             arr.put(o)
         }
         prefs.edit().putString("habits", arr.toString()).apply()
+        Reminders.sync(getApplication<Application>(), habits, remindersOn)
     }
 
     private fun loadHabits(): List<Habit> {
