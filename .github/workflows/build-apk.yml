@@ -71,7 +71,7 @@ jobs:
           code=$?
           set -e
           if [ "$code" -ne 0 ]; then
-            msg=$( { grep -E '^e: ' test.log; grep -E 'FAILED|Exception|Error:' test.log; } 2>/dev/null \
+            msg=$( { grep -E '^e: ' test.log; grep -m1 -A18 'ComposeTimeoutException' test.log; grep -E 'FAILED' test.log; } 2>/dev/null \
               | sed -E 's#file:///home/runner/work/[^/]+/[^/]+/##' | head -40 \
               | sed 's/%/%25/g' | awk '{printf "%s%%0A", $0}' )
             echo "::warning title=Preview tests failed::${msg}"
