@@ -14,6 +14,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -32,6 +38,7 @@ import kotlinx.coroutines.delay
 /** Full-screen pages that open on top of the tabs. */
 sealed interface Screen {
     data class NewTask(val day: Long?) : Screen
+    data class Detail(val id: String) : Screen
     data class EditTask(val id: String) : Screen
 }
 
@@ -41,6 +48,8 @@ fun AppRoot(vm: AppViewModel) {
     var tab by rememberSaveable { mutableIntStateOf(0) }
     val stack = remember { mutableStateListOf<Screen>() }
     val today = vm.now.toLocalDate().toEpochDay()
+    val snackbar = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
 
     // Keep "today" and overdue states fresh while the app stays open.
     LaunchedEffect(Unit) {
@@ -61,6 +70,7 @@ fun AppRoot(vm: AppViewModel) {
         Scaffold(
             containerColor = p.bg,
             contentWindowInsets = WindowInsets(0.dp, 0.dp, 0.dp, 0.dp),
+            snackbarHost = { SnackbarHost(snackbar) },
             bottomBar = {
                 FloatingNav(tab, { tab = it }, onAdd = { stack.add(Screen.NewTask(vm.selectedDay)) })
             }
@@ -69,7 +79,7 @@ fun AppRoot(vm: AppViewModel) {
                 0 -> HomeScreen(
                     vm = vm,
                     padding = padding,
-                    onOpenTask = { id -> stack.add(Screen.EditTask(id)) },
+                    onOpenTask = { id -> stack.add(Screen.Detail(id)) },
                     onOpenProfile = { tab = 3 },
                     onOpenHabits = {}
                 )
@@ -94,6 +104,27 @@ fun AppRoot(vm: AppViewModel) {
                         prefillDay = top.day,
                         today = today,
                         onFinish = { pop() }
+                    )
+                    is Screen.Detail -> TaskDetail(
+                        vm = vm,
+                        taskId = top.id,
+                        today = today,
+                        onBack = { pop() },
+                        onEdit = { stack.add(Screen.EditTask(top.id)) },
+                        onDelete = {
+                            val removed = vm.deleteTask(top.id)
+                            pop()
+                            if (removed != null) {
+                                scope.launch {
+                                    val r = snackbar.showSnackbar(
+                                        "Task deleted",
+                                        actionLabel = "Undo",
+                                        duration = SnackbarDuration.Short
+                                    )
+                                    if (r == SnackbarResult.ActionPerformed) vm.restoreTask(removed)
+                                }
+                            }
+                        }
                     )
                     is Screen.EditTask -> {
                         val task = vm.taskById(top.id)
