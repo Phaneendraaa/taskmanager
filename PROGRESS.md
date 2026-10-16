@@ -13,8 +13,8 @@ TODO = not started
 | # | Part | Status |
 |---|------|--------|
 | 1 | Design system, data layer, app shell (palette, icons, hero art, components, model, floating nav) | DONE |
-| 2 | Home screen (greeting hero, date strip, category chips, task cards, search) | PUSHED |
-| 3 | Create / Edit task (date, time, repeat, category, priority, sub-tasks, attachments, voice notes) | TODO |
+| 2 | Home screen (greeting hero, date strip, category chips, task cards, search) | DONE |
+| 3 | Create / Edit task (date, time, repeat, category, priority, sub-tasks, attachments, voice notes) | PUSHED |
 | 4 | Task detail (chips, info, sub-tasks, attachments, Mark as Complete, undo delete) | TODO |
 | 5 | Calendar (month grid with task dots, day list) | TODO |
 | 6 | Progress (Week/Month/Year, ring, stats, daily goal, tasks by category) | TODO |
@@ -31,12 +31,18 @@ TODO = not started
 - `Navigation.kt` floating bottom bar with raised + button
 - Build fix: renamed two functions whose names clashed with property setters
 
-### 2. Home screen (PUSHED)
+### 2. Home screen (DONE)
 - `HomeScreen.kt`: time-based greeting, "Let's make it happen." hero with quote of the day,
   scrollable date strip, category filter chips, Today list, overdue and anytime sections,
   search, menu (habits, dark mode, clear completed)
 - Task cards: check circle, icon, category dot, time, high-priority flag, sub-task count
-- The + button and opening a task arrive in parts 3 and 4
+- The + button and opening a task now lead to the task form (part 3)
+
+### 3. Create / Edit task (PUSHED)
+- `TaskForm.kt`: title, notes with voice input, date, start and end time, repeat, category,
+  priority, sub-tasks, attachments, gradient Add Task / Save button
+- `AppRoot.kt`: pages open on top of the tabs, system back closes them; + opens a new task
+  for the selected day, tapping a task opens it for editing (the detail page comes in part 4)
 
 ### Notes
 - Everything is stored on the device only.
