@@ -58,6 +58,9 @@ fun AppRoot(vm: AppViewModel) {
     var confirmDelete by remember { mutableStateOf<String?>(null) }
     var taskMenu by remember { mutableStateOf<String?>(null) }
     var confirmDeleteTask by remember { mutableStateOf<String?>(null) }
+    val today = vm.now.toLocalDate().toEpochDay()
+    val snackbar = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
 
     fun deleteTaskWithUndo(id: String) {
         val removed = vm.deleteTask(id)
@@ -68,9 +71,6 @@ fun AppRoot(vm: AppViewModel) {
             }
         }
     }
-    val today = vm.now.toLocalDate().toEpochDay()
-    val snackbar = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
 
     // Keep "today" and overdue states fresh while the app stays open.
     LaunchedEffect(Unit) {
