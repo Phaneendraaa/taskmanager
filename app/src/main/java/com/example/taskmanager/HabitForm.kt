@@ -133,69 +133,8 @@ fun HabitFields(d: HabitDraft, onMic: (() -> Unit)? = null) {
         }
     }
 
-    Spacer(Modifier.height(24.dp))
-    SmallLabel("Anchor it to your day")
-    Spacer(Modifier.height(8.dp))
-    FieldBox(Ic.REPEAT) {
-        PlainField(
-            value = d.cue,
-            onValueChange = { d.cue = it.take(60) },
-            placeholder = "After I... (e.g. pour my morning coffee)",
-            size = 15.sp,
-            singleLine = true
-        )
-    }
-    val sentence = Habit(id = "", name = d.name.trim(), createdDay = 0, cue = d.cue).cueSentence()
-    if (sentence != null && d.name.isNotBlank()) {
-        Spacer(Modifier.height(8.dp))
-        Txt(sentence, size = 13.sp, color = p.accentText, lineHeight = 18.sp)
-    } else {
-        Spacer(Modifier.height(8.dp))
-        Txt("Attaching a habit to something you already do makes it far more likely to happen.", size = 12.sp, color = p.muted, lineHeight = 17.sp)
-    }
-
     Spacer(Modifier.height(20.dp))
-    SmallLabel("Minimum version for bad days")
-    Spacer(Modifier.height(8.dp))
-    FieldBox(Ic.TARGET) {
-        PlainField(
-            value = d.minimum,
-            onValueChange = { d.minimum = it.take(60) },
-            placeholder = "e.g. read one page",
-            size = 15.sp,
-            singleLine = true
-        )
-    }
-    Spacer(Modifier.height(8.dp))
-    Txt("Doing the tiny version still counts as showing up.", size = 12.sp, color = p.muted)
-
-    Spacer(Modifier.height(20.dp))
-    SmallLabel("Who does this make you? (optional)")
-    Spacer(Modifier.height(8.dp))
-    FieldBox(Ic.PERSON) {
-        PlainField(
-            value = d.identity,
-            onValueChange = { d.identity = it.take(60) },
-            placeholder = "e.g. someone who reads every day",
-            size = 15.sp,
-            singleLine = true
-        )
-    }
-
-    Spacer(Modifier.height(20.dp))
-    SmallLabel("Category")
-    Spacer(Modifier.height(8.dp))
-    Row(
-        Modifier.horizontalScroll(rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        HabitCategory.values().forEach { c ->
-            CategoryChip(c.label, c.icon, c.color, d.category == c) { d.category = c }
-        }
-    }
-
-    Spacer(Modifier.height(20.dp))
-    SmallLabel("Frequency")
+    SmallLabel("How often")
     Spacer(Modifier.height(8.dp))
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         Chip("Daily", frequency == 0) { d.mask = 127 }
@@ -300,6 +239,67 @@ fun HabitFields(d: HabitDraft, onMic: (() -> Unit)? = null) {
                     uncheckedBorderColor = p.faint
                 )
             )
+        }
+    }
+
+    Spacer(Modifier.height(24.dp))
+    SmallLabel("Anchor it to your day (recommended)")
+    Spacer(Modifier.height(8.dp))
+    FieldBox(Ic.REPEAT) {
+        PlainField(
+            value = d.cue,
+            onValueChange = { d.cue = it.take(60) },
+            placeholder = "After I... (e.g. pour my morning coffee)",
+            size = 15.sp,
+            singleLine = true
+        )
+    }
+    val sentence = Habit(id = "", name = d.name.trim(), createdDay = 0, cue = d.cue).cueSentence()
+    if (sentence != null && d.name.isNotBlank()) {
+        Spacer(Modifier.height(8.dp))
+        Txt(sentence, size = 13.sp, color = p.accentText, lineHeight = 18.sp)
+    } else {
+        Spacer(Modifier.height(8.dp))
+        Txt("Attaching a habit to something you already do makes it far more likely to happen.", size = 12.sp, color = p.muted, lineHeight = 17.sp)
+    }
+
+    Spacer(Modifier.height(20.dp))
+    SmallLabel("Minimum version for bad days")
+    Spacer(Modifier.height(8.dp))
+    FieldBox(Ic.TARGET) {
+        PlainField(
+            value = d.minimum,
+            onValueChange = { d.minimum = it.take(60) },
+            placeholder = "e.g. read one page",
+            size = 15.sp,
+            singleLine = true
+        )
+    }
+    Spacer(Modifier.height(8.dp))
+    Txt("Doing the tiny version still counts as showing up.", size = 12.sp, color = p.muted)
+
+    Spacer(Modifier.height(20.dp))
+    SmallLabel("Who does this make you? (optional)")
+    Spacer(Modifier.height(8.dp))
+    FieldBox(Ic.PERSON) {
+        PlainField(
+            value = d.identity,
+            onValueChange = { d.identity = it.take(60) },
+            placeholder = "e.g. someone who reads every day",
+            size = 15.sp,
+            singleLine = true
+        )
+    }
+
+    Spacer(Modifier.height(20.dp))
+    SmallLabel("Category")
+    Spacer(Modifier.height(8.dp))
+    Row(
+        Modifier.horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        HabitCategory.values().forEach { c ->
+            CategoryChip(c.label, c.icon, c.color, d.category == c) { d.category = c }
         }
     }
 

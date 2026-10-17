@@ -161,19 +161,16 @@ fun TaskForm(
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp)
         ) {
-            if (existing == null && onSwitchToHabit != null) {
-                SegmentedControl(listOf("Habit", "Task"), 1, { if (it == 0) onSwitchToHabit() })
-                Spacer(Modifier.height(16.dp))
-            }
             Spacer(Modifier.height(6.dp))
             Txt(
-                if (existing == null) "Create a New Task" else "Edit Task",
-                size = 30.sp,
-                weight = FontWeight.ExtraBold
+                if (existing == null) "New task" else "Edit task",
+                size = 28.sp,
+                weight = FontWeight.SemiBold,
+                serif = true
             )
             Spacer(Modifier.height(4.dp))
             Txt(
-                if (existing == null) "Turn your plans into progress." else "Make it exactly right.",
+                if (existing == null) "Write it down, then get it off your mind." else "Make it exactly right.",
                 size = 15.sp,
                 color = p.muted
             )
@@ -547,16 +544,16 @@ private fun PriorityOption(
     Row(
         modifier
             .clip(shape)
-            .background(if (on) color.copy(alpha = 0.16f) else p.field)
-            .border(1.5.dp, if (on) color else p.cardBorder, shape)
+            .background(if (on) p.inverse else p.field)
+            .border(1.dp, if (on) p.inverse else p.cardBorder, shape)
             .clickable(onClick = onClick)
             .padding(vertical = 14.dp),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        AppIcon(Ic.FLAG, color, size = 18.dp)
+        AppIcon(Ic.FLAG, if (on) p.onInverse else color, size = 18.dp)
         Spacer(Modifier.width(8.dp))
-        Txt(label, size = 14.sp, weight = FontWeight.Medium)
+        Txt(label, size = 14.sp, weight = FontWeight.Medium, color = if (on) p.onInverse else p.text)
     }
 }
 
