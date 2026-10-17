@@ -9,7 +9,24 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.slideInVertically
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalHapticFeedback
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -184,7 +201,7 @@ private val TOUR = listOf(
     )
 )
 
-private val PAGES = listOf("welcome", "name", "why", "identity", "dropoff", "wake", "energy", "tour", "starter", "first")
+private val PAGES = listOf("welcome", "name", "why", "identity", "dropoff", "wake", "energy", "tour", "starter", "first", "commit")
 
 @Composable
 fun OnboardingScreen(vm: AppViewModel) {
@@ -200,6 +217,7 @@ fun OnboardingScreen(vm: AppViewModel) {
     var tourStep by remember { mutableIntStateOf(0) }
     var firstWin by remember { mutableStateOf("") }
     var remind by remember { mutableStateOf(true) }
+    var committed by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val notifPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         remind = granted
@@ -295,6 +313,7 @@ fun OnboardingScreen(vm: AppViewModel) {
                                     onDone = { page = current + 1 }
                                 )
                             }
+                            Reaction(if (name.isNotBlank()) "Nice to meet you, ${name.trim()}." else null)
                         }
                         "why" -> Step(
                             if (name.isBlank()) "What do you want more of?" else name.trim() + ", what do you want more of?",
@@ -305,6 +324,11 @@ fun OnboardingScreen(vm: AppViewModel) {
                                     if (g.key in goals) goals.remove(g.key) else goals.add(g.key)
                                 }
                             }
+                            Reaction(
+                                if (goals.isEmpty()) null
+                                else "Good. Your suggestions will lean towards " +
+                                    GOALS.filter { it.key in goals }.take(2).joinToString(" and ") { it.title.lowercase() } + "."
+                            )
                         }
                         "identity" -> Step(
                             "A year from now, who are you?",
@@ -313,6 +337,7 @@ fun OnboardingScreen(vm: AppViewModel) {
                             IDENTITIES.forEach { o ->
                                 OptionCard(o.title, null, o.ic, identity == o.key) { identity = o.key }
                             }
+                            Reaction(IDENTITIES.firstOrNull { it.key == identity }?.let { "Every habit you tick is a vote for being ${it.phrase}." })
                         }
                         "dropoff" -> Step(
                             "Be honest: when do you usually quit?",
@@ -321,16 +346,19 @@ fun OnboardingScreen(vm: AppViewModel) {
                             DROPS.forEach { o ->
                                 OptionCard(o.title, o.sub, Ic.TARGET, dropoff == o.key) { dropoff = o.key }
                             }
+                            Reaction(DROPS.firstOrNull { it.key == dropoff }?.let { "Noted. ${it.sub}." })
                         }
                         "wake" -> Step("When do you usually wake up?", "We will plan your morning around it.") {
                             WAKE_LABELS.forEachIndexed { i, label ->
                                 OptionCard(label, null, if (i < 2) Ic.SUN else Ic.CLOUD, wake == i) { wake = i }
                             }
+                            Reaction("Your mornings start around ${formatMinute(WAKE_MINUTES[wake])}. We will plan around that.")
                         }
                         "energy" -> Step("When is your energy highest?", "Focus habits go in your best window.") {
                             ENERGY_LABELS.forEachIndexed { i, label ->
                                 OptionCard(label, ENERGY_SUB[i], ENERGY_ICONS[i], energy == i) { energy = i }
                             }
+                            Reaction("Deep work goes in your ${ENERGY_LABELS[energy].lowercase()}, when you are sharpest.")
                         }
                         "tour" -> {
                             val c = TOUR[tourStep]
@@ -393,6 +421,39 @@ fun OnboardingScreen(vm: AppViewModel) {
                                 )
                             }
                         }
+                        "commit" -> Step(
+                            if (name.isBlank()) "Your system" else "Your system, ${name.trim()}",
+                            "Here is what you set up. One last thing: make it a promise."
+                        ) {
+                            Column(Modifier.fillMaxWidth().cardStyle(p).padding(horizontal = 16.dp, vertical = 8.dp)) {
+                                SummaryLine("Becoming", IDENTITIES.firstOrNull { it.key == identity }?.phrase ?: "a better version of you")
+                                SummaryLine("Mornings start", formatMinute(WAKE_MINUTES[wake]))
+                                SummaryLine("Focus window", ENERGY_LABELS[energy])
+                                SummaryLine("Starting habits", if (picked.isEmpty()) "Clean slate" else picked.size.toString())
+                                SummaryLine("First win", firstWin.trim().ifBlank { "Pick it on Today" })
+                                SummaryLine("Reminders", if (remind) "Morning and evening" else "Off")
+                            }
+                            Column(Modifier.fillMaxWidth().cardStyle(p).padding(18.dp)) {
+                                Txt(
+                                    "I will show up for small things, every day. If I miss one, I will not miss twice.",
+                                    size = 19.sp, serif = true, weight = FontWeight.Medium, lineHeight = 27.sp
+                                )
+                                if (name.isNotBlank()) {
+                                    Spacer(Modifier.height(10.dp))
+                                    Txt("- " + name.trim(), size = 14.sp, color = p.muted)
+                                }
+                            }
+                            AnimatedVisibility(committed, enter = fadeIn(tween(400)) + scaleIn(tween(400), initialScale = 0.8f)) {
+                                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                    Box(
+                                        Modifier.size(40.dp).clip(CircleShape).background(p.accent),
+                                        contentAlignment = Alignment.Center
+                                    ) { AppIcon(Ic.CHECK, Color.White, size = 20.dp, stroke = 2.6f) }
+                                    Spacer(Modifier.size(12.dp))
+                                    Txt("Committed. See you tomorrow morning.", size = 15.sp, weight = FontWeight.SemiBold)
+                                }
+                            }
+                        }
                         else -> Step(
                             "Start small, or start clean",
                             "One to three habits is plenty. Nothing is added unless you tick it."
@@ -411,10 +472,13 @@ fun OnboardingScreen(vm: AppViewModel) {
                         }
                     }
                     Spacer(Modifier.height(12.dp))
-                    GradientButton(
+                    if (PAGES[current] == "commit") {
+                        if (!committed) HoldToCommit { committed = true }
+                        else GradientButton("Enter forge", { finish() }, Modifier.fillMaxWidth(), icon = Ic.ARROW_RIGHT)
+                    } else GradientButton(
                         text = when {
                             PAGES[current] == "tour" -> if (tourStep < TOUR.size - 1) "Next" else "Got it"
-                            PAGES[current] == "first" -> "Enter forge"
+                            PAGES[current] == "first" -> "Continue"
                             PAGES[current] == "starter" -> when (picked.size) {
                                 0 -> "Continue with a clean slate"
                                 1 -> "Continue with 1 habit"
@@ -446,42 +510,59 @@ fun OnboardingScreen(vm: AppViewModel) {
 @Composable
 private fun androidx.compose.foundation.layout.ColumnScope.Welcome(onStart: () -> Unit, onSkip: () -> Unit) {
     val p = LocalPalette.current
-    Spacer(Modifier.height(56.dp))
-    Txt("forge", Modifier.fillMaxWidth(), size = 52.sp, weight = FontWeight.SemiBold, serif = true, align = TextAlign.Center)
+    var stage by remember { mutableIntStateOf(0) }
+    LaunchedEffect(Unit) {
+        for (i in 1..5) {
+            delay(if (i == 1) 150 else 550)
+            stage = i
+        }
+    }
+    val enter = fadeIn(tween(700)) + slideInVertically(tween(700)) { it / 3 }
+    Spacer(Modifier.height(48.dp))
+    AnimatedVisibility(stage >= 1, enter = enter) {
+        Txt("forge", Modifier.fillMaxWidth(), size = 52.sp, weight = FontWeight.SemiBold, serif = true, align = TextAlign.Center)
+    }
     Spacer(Modifier.height(14.dp))
-    Txt(
-        "Most people do not fail because they lack motivation. They fail because they have no system.",
-        Modifier.fillMaxWidth(),
-        size = 17.sp,
-        color = p.text,
-        align = TextAlign.Center,
-        lineHeight = 25.sp
-    )
-    Spacer(Modifier.height(10.dp))
-    Txt(
-        "A few honest questions, then a clean slate. Nothing is added unless you choose it.",
-        Modifier.fillMaxWidth(),
-        size = 14.sp,
-        color = p.muted,
-        align = TextAlign.Center,
-        lineHeight = 20.sp
-    )
-    Spacer(Modifier.height(32.dp))
-    WelcomeCard(Ic.TARGET, "Plan", "Three priorities each morning.")
-    Spacer(Modifier.height(12.dp))
-    WelcomeCard(Ic.REPEAT, "Practise", "Habits tied to your routine.")
-    Spacer(Modifier.height(12.dp))
-    WelcomeCard(Ic.CHART, "Review", "Twenty seconds each evening.")
+    AnimatedVisibility(stage >= 2, enter = enter) {
+        Txt(
+            "Most people do not fail because they lack motivation.",
+            Modifier.fillMaxWidth(), size = 18.sp, color = p.muted, align = TextAlign.Center, lineHeight = 25.sp
+        )
+    }
+    Spacer(Modifier.height(6.dp))
+    AnimatedVisibility(stage >= 3, enter = enter) {
+        Txt(
+            "They fail because they have no system.",
+            Modifier.fillMaxWidth(), size = 20.sp, weight = FontWeight.SemiBold, serif = true, align = TextAlign.Center, lineHeight = 27.sp
+        )
+    }
+    Spacer(Modifier.height(28.dp))
+    AnimatedVisibility(stage >= 4, enter = enter) {
+        Column {
+            WelcomeCard(Ic.TARGET, "Plan", "Three priorities each morning.")
+            Spacer(Modifier.height(10.dp))
+            WelcomeCard(Ic.REPEAT, "Practise", "Habits tied to your routine.")
+            Spacer(Modifier.height(10.dp))
+            WelcomeCard(Ic.CHART, "Review", "Twenty seconds each evening.")
+        }
+    }
     Spacer(Modifier.weight(1f))
-    GradientButton("Begin", onStart, Modifier.fillMaxWidth(), icon = Ic.ARROW_RIGHT)
-    Spacer(Modifier.height(8.dp))
-    Txt(
-        "Skip, I will set up myself",
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable(onClick = onSkip).padding(12.dp),
-        size = 14.sp,
-        color = p.muted,
-        align = TextAlign.Center
-    )
+    AnimatedVisibility(stage >= 5, enter = fadeIn(tween(500))) {
+        Column {
+            Txt(
+                "Two minutes of questions. Nothing is added unless you choose it.",
+                Modifier.fillMaxWidth(), size = 13.sp, color = p.muted, align = TextAlign.Center
+            )
+            Spacer(Modifier.height(12.dp))
+            GradientButton("Build my system", onStart, Modifier.fillMaxWidth(), icon = Ic.ARROW_RIGHT)
+            Spacer(Modifier.height(6.dp))
+            Txt(
+                "Skip, I will set up myself",
+                Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable(onClick = onSkip).padding(12.dp),
+                size = 14.sp, color = p.muted, align = TextAlign.Center
+            )
+        }
+    }
     Spacer(Modifier.height(10.dp))
 }
 
@@ -627,5 +708,75 @@ private fun TourBody(c: TourCard, step: Int, total: Int) {
                     .background(if (i == step) p.text else p.faint)
             )
         }
+    }
+}
+
+/** A short reply that appears once the person answers, so the questions feel like a conversation. */
+@Composable
+private fun Reaction(text: String?) {
+    val p = LocalPalette.current
+    AnimatedVisibility(text != null, enter = fadeIn(tween(350)) + expandVertically(tween(350))) {
+        Row(Modifier.fillMaxWidth().padding(top = 6.dp), verticalAlignment = Alignment.Top) {
+            Box(Modifier.padding(top = 7.dp).size(6.dp).clip(CircleShape).background(p.accent))
+            Spacer(Modifier.size(10.dp))
+            Txt(text ?: "", size = 14.sp, color = p.accentText, lineHeight = 20.sp, weight = FontWeight.Medium)
+        }
+    }
+}
+
+@Composable
+private fun SummaryLine(label: String, value: String) {
+    val p = LocalPalette.current
+    Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+        Txt(label, size = 14.sp, color = p.muted, modifier = Modifier.weight(1f))
+        Txt(value, size = 14.sp, weight = FontWeight.SemiBold, maxLines = 1, modifier = Modifier.padding(start = 12.dp))
+    }
+}
+
+/** Press and hold to commit. Letting go early resets it, which makes the moment deliberate. */
+@Composable
+private fun HoldToCommit(onDone: () -> Unit) {
+    val p = LocalPalette.current
+    val progress = remember { Animatable(0f) }
+    val scope = rememberCoroutineScope()
+    val haptic = LocalHapticFeedback.current
+    var done by remember { mutableStateOf(false) }
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .height(54.dp)
+            .clip(RoundedCornerShape(14.dp))
+            .background(p.field)
+            .pointerInput(Unit) {
+                detectTapGestures(onPress = {
+                    if (done) return@detectTapGestures
+                    val job = scope.launch {
+                        progress.animateTo(1f, tween(1400, easing = LinearEasing))
+                        done = true
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        onDone()
+                    }
+                    tryAwaitRelease()
+                    if (!done) {
+                        job.cancel()
+                        scope.launch { progress.animateTo(0f, tween(250)) }
+                    }
+                })
+            },
+        contentAlignment = Alignment.Center
+    ) {
+        Box(
+            Modifier
+                .align(Alignment.CenterStart)
+                .fillMaxHeight()
+                .fillMaxWidth(progress.value)
+                .background(p.inverse)
+        )
+        Txt(
+            if (progress.value > 0f) "Keep holding" else "Press and hold to commit",
+            size = 15.sp,
+            weight = FontWeight.SemiBold,
+            color = if (progress.value > 0.5f) p.onInverse else p.text
+        )
     }
 }
