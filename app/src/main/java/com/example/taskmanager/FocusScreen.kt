@@ -68,6 +68,7 @@ fun FocusScreen(vm: AppViewModel, onClose: (() -> Unit)?) {
     var nowMs by remember { mutableLongStateOf(System.currentTimeMillis()) }
     var pickTask by remember { mutableStateOf(false) }
     var settings by remember { mutableStateOf(false) }
+    var quickLen by remember { mutableStateOf(false) }
 
     // Keep the screen awake while the timer page is open.
     val view = LocalView.current
@@ -120,7 +121,13 @@ fun FocusScreen(vm: AppViewModel, onClose: (() -> Unit)?) {
             SegmentedControl(MODE_NAMES, vm.focusMode, { vm.selectMode(it) })
 
             Spacer(Modifier.height(28.dp))
-            Box(Modifier.size(264.dp), contentAlignment = Alignment.Center) {
+            Box(
+                Modifier
+                    .size(264.dp)
+                    .clip(CircleShape)
+                    .clickable(onClickLabel = "Change length") { if (!vm.timerRunning) quickLen = true },
+                contentAlignment = Alignment.Center
+            ) {
                 ProgressRing(elapsed, Modifier.fillMaxSize(), thickness = 8.dp)
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Txt(clock(remaining), size = 54.sp, weight = FontWeight.Medium, serif = true)
@@ -132,6 +139,10 @@ fun FocusScreen(vm: AppViewModel, onClose: (() -> Unit)?) {
                         modifier = Modifier.padding(horizontal = 36.dp),
                         align = TextAlign.Center
                     )
+                    if (!vm.timerRunning) {
+                        Spacer(Modifier.height(6.dp))
+                        Txt("Tap to change", size = 12.sp, color = p.accentText)
+                    }
                 }
             }
 
@@ -253,6 +264,7 @@ fun FocusScreen(vm: AppViewModel, onClose: (() -> Unit)?) {
     }
 
     if (settings) FocusLengthsDialog(vm) { settings = false }
+    if (quickLen) QuickLengthDialog(vm) { quickLen = false }
 }
 
 @Composable
@@ -319,6 +331,54 @@ fun FocusLengthsDialog(vm: AppViewModel, onDismiss: () -> Unit) {
                 onDismiss()
             }) { Text("Save") }
         },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+    )
+}
+
+/** Opened by tapping the clock: pick a length for the current mode in one tap. */
+@Composable
+private fun QuickLengthDialog(vm: AppViewModel, onDismiss: () -> Unit) {
+    val p = LocalPalette.current
+    val mode = vm.focusMode
+    val presets = when (mode) {
+        0 -> listOf(15, 25, 45, 60, 90)
+        1 -> listOf(3, 5, 10, 15)
+        else -> listOf(10, 15, 20, 30)
+    }
+    var value by remember { mutableLongStateOf(vm.lenOf(mode).toLong()) }
+    fun apply(m: Int) {
+        val f = if (mode == 0) m else vm.focusLen
+        val sh = if (mode == 1) m else vm.shortLen
+        val lo = if (mode == 2) m else vm.longLen
+        vm.updateFocusLengths(f, sh, lo)
+        vm.selectMode(mode)
+        onDismiss()
+    }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(listOf("Focus length", "Short break", "Long break")[mode]) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    presets.forEach { m ->
+                        val on = value.toInt() == m
+                        Box(
+                            Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(if (on) p.inverse else p.field)
+                                .clickable { apply(m) }
+                                .padding(vertical = 12.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Txt("$m", size = 15.sp, weight = FontWeight.SemiBold, color = if (on) p.onInverse else p.text, maxLines = 1)
+                        }
+                    }
+                }
+                LenRow("Custom", value.toInt(), { value = (value - 1).coerceAtLeast(1) }, { value = (value + 1).coerceAtMost(180) })
+            }
+        },
+        confirmButton = { TextButton(onClick = { apply(value.toInt()) }) { Text("Set") } },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
     )
 }

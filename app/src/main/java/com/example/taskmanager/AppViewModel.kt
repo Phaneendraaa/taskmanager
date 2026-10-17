@@ -227,9 +227,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun updateFocusLengths(focus: Int, short: Int, long: Int) {
-        focusLen = focus.coerceIn(5, 90)
-        shortLen = short.coerceIn(1, 30)
-        longLen = long.coerceIn(5, 60)
+        focusLen = focus.coerceIn(1, 180)
+        shortLen = short.coerceIn(1, 60)
+        longLen = long.coerceIn(1, 90)
         prefs.edit().putInt("focusLen", focusLen).putInt("shortLen", shortLen).putInt("longLen", longLen).apply()
         if (!timerRunning) timerLeftMs = lenOf(focusMode) * 60_000L
     }
