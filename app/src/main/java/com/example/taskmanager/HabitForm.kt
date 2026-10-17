@@ -364,8 +364,8 @@ fun Chip(label: String, selected: Boolean, onClick: () -> Unit) {
     Box(
         Modifier
             .clip(shape)
-            .background(if (selected) p.accent.copy(alpha = 0.18f) else p.field)
-            .border(1.dp, if (selected) p.accent else p.cardBorder, shape)
+            .background(if (selected) p.inverse else p.field)
+            .border(1.dp, if (selected) p.inverse else p.cardBorder, shape)
             .clickable(onClick = onClick)
             .padding(horizontal = 18.dp, vertical = 10.dp)
     ) {
@@ -373,7 +373,7 @@ fun Chip(label: String, selected: Boolean, onClick: () -> Unit) {
             label,
             size = 14.sp,
             weight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
-            color = if (selected) p.accentText else p.text
+            color = if (selected) p.onInverse else p.text
         )
     }
 }

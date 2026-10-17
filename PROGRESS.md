@@ -28,3 +28,13 @@ Legend: DONE = pushed and the build passed, DONE = pushed, build being checked, 
 | O2 | Guided tour that explains each tab and why it works | PUSHED |
 | O3 | First win, reminders permission, motivation finale | PUSHED |
 | O4 | Replay the intro from Settings | PUSHED |
+
+## Ease of use and polish
+| Part | What | Status |
+|---|---|---|
+| B1 | Plus button in the bottom bar: choose task or habit | DONE |
+| B2 | Display size setting, compact by default | DONE |
+| B3 | Tighter rows and spacing | DONE |
+| B4 | Livelier onboarding: animated welcome, replies, your-system summary, hold to commit | DONE |
+| B5 | Previews of onboarding and create sheet | DONE |
+| B6 | Simpler task and habit forms | DONE |
