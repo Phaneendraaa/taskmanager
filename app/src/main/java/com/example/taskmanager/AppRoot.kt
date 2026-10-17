@@ -23,6 +23,7 @@ import kotlinx.coroutines.launch
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
@@ -51,6 +52,7 @@ fun AppRoot(vm: AppViewModel) {
     var tab by rememberSaveable { mutableIntStateOf(0) }
     var addMode by rememberSaveable { mutableIntStateOf(1) }
     val stack = remember { mutableStateListOf<Screen>() }
+    var showAdd by remember { mutableStateOf(false) }
     val today = vm.now.toLocalDate().toEpochDay()
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -69,6 +71,7 @@ fun AppRoot(vm: AppViewModel) {
 
     val top = stack.lastOrNull()
     BackHandler(enabled = top != null) { pop() }
+    BackHandler(enabled = showAdd && top == null) { showAdd = false }
 
     Box(Modifier.fillMaxSize().background(p.bg)) {
         Scaffold(
@@ -76,7 +79,7 @@ fun AppRoot(vm: AppViewModel) {
             contentWindowInsets = WindowInsets(0.dp, 0.dp, 0.dp, 0.dp),
             snackbarHost = { SnackbarHost(snackbar) },
             bottomBar = {
-                BottomTabs(tab) { tab = it }
+                BottomTabs(tab, { tab = it }, onAdd = { showAdd = true })
             }
         ) { padding ->
             when (tab) {
@@ -105,6 +108,14 @@ fun AppRoot(vm: AppViewModel) {
                     onPickDay = { day -> vm.selectedDay = day; tab = 0 }
                 )
             }
+        }
+
+        if (showAdd && top == null) {
+            AddSheet(
+                onTask = { showAdd = false; stack.add(Screen.NewTask(today)) },
+                onHabit = { showAdd = false; stack.add(Screen.NewHabit) },
+                onDismiss = { showAdd = false }
+            )
         }
 
         if (top != null) {

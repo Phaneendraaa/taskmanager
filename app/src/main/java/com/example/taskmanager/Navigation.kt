@@ -10,6 +10,11 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.runtime.remember
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -31,7 +36,7 @@ private val TABS = listOf(
 
 /** Flat bottom bar with four tabs. Nothing floats, nothing is raised. */
 @Composable
-fun BottomTabs(tab: Int, onTab: (Int) -> Unit) {
+fun BottomTabs(tab: Int, onTab: (Int) -> Unit, onAdd: () -> Unit) {
     val p = LocalPalette.current
     Column(
         Modifier
@@ -46,6 +51,17 @@ fun BottomTabs(tab: Int, onTab: (Int) -> Unit) {
                 .height(62.dp)
         ) {
             TABS.forEachIndexed { i, spec ->
+                if (i == 2) {
+                    Box(
+                        Modifier.weight(1f).fillMaxHeight().clickable(onClick = onAdd),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Box(
+                            Modifier.size(46.dp).clip(CircleShape).background(p.inverse),
+                            contentAlignment = Alignment.Center
+                        ) { AppIcon(Ic.PLUS, p.onInverse, size = 24.dp, stroke = 2.4f) }
+                    }
+                }
                 val on = i == tab
                 val tint = if (on) p.text else p.muted
                 Column(
@@ -75,5 +91,57 @@ fun BottomTabs(tab: Int, onTab: (Int) -> Unit) {
                 }
             }
         }
+    }
+}
+
+/** Small sheet over the app that asks what to create. */
+@Composable
+fun AddSheet(onTask: () -> Unit, onHabit: () -> Unit, onDismiss: () -> Unit) {
+    val p = LocalPalette.current
+    Box(
+        Modifier
+            .fillMaxSize()
+            .background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.45f))
+            .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onDismiss),
+        contentAlignment = Alignment.BottomCenter
+    ) {
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp))
+                .background(p.bg)
+                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {}
+                .navigationBarsPadding()
+                .padding(horizontal = 20.dp, vertical = 20.dp)
+        ) {
+            Txt("Create", size = 22.sp, weight = FontWeight.SemiBold, serif = true)
+            Spacer(Modifier.height(4.dp))
+            Txt("What would you like to add?", size = 14.sp, color = p.muted)
+            Spacer(Modifier.height(16.dp))
+            AddOption(Ic.NOTES, "New task", "Something to get done, with a date if you like", onTask)
+            Spacer(Modifier.height(10.dp))
+            AddOption(Ic.REPEAT, "New habit", "Something to repeat, tied to your day", onHabit)
+            Spacer(Modifier.height(6.dp))
+        }
+    }
+}
+
+@Composable
+private fun AddOption(ic: Ic, title: String, sub: String, onClick: () -> Unit) {
+    val p = LocalPalette.current
+    Row(
+        Modifier.fillMaxWidth().cardStyle(p).clickable(onClick = onClick).padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            Modifier.size(42.dp).clip(RoundedCornerShape(12.dp)).background(p.field),
+            contentAlignment = Alignment.Center
+        ) { AppIcon(ic, p.text, size = 22.dp) }
+        Spacer(Modifier.width(14.dp))
+        Column(Modifier.weight(1f)) {
+            Txt(title, size = 16.sp, weight = FontWeight.SemiBold)
+            Txt(sub, size = 12.sp, color = p.muted, maxLines = 2)
+        }
+        AppIcon(Ic.CHEVRON_RIGHT, p.muted, size = 18.dp)
     }
 }
