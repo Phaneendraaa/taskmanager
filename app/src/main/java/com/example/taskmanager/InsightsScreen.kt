@@ -97,8 +97,9 @@ fun InsightsScreen(vm: AppViewModel, padding: PaddingValues, onPickDay: (Long) -
         .filter { it.second != null }
     val bestWeekday = weekdayPct.withIndex().filter { it.value != null }.maxByOrNull { it.value!! }
     val worstWeekday = weekdayPct.withIndex().filter { it.value != null }.minByOrNull { it.value!! }
-    val bestPeriod = periodPct.maxByOrNull { it.second!! }
-    val worstPeriod = periodPct.minByOrNull { it.second!! }
+    val timed = periodPct.filter { it.first != Period.ANYTIME }
+    val bestPeriod = timed.maxByOrNull { it.second!! }
+    val worstPeriod = timed.minByOrNull { it.second!! }
 
     val levels = HashMap<Long, Float?>()
     for (d in today - 7 * 16..today) levels[d] = dayFraction(habits, d)
@@ -389,7 +390,7 @@ private fun BarChart(
     gridLabels: List<String>? = null
 ) {
     val p = LocalPalette.current
-    val soft = p.accent.copy(alpha = 0.45f)
+    val soft = androidx.compose.ui.graphics.lerp(p.card, p.accent, 0.45f)
     Box(Modifier.fillMaxWidth().height(height)) {
         Canvas(Modifier.fillMaxSize()) {
             val n = values.size
@@ -423,9 +424,6 @@ private fun BarChart(
                 )
             }
         }
-        if (gridLabels != null) {
-            Txt(gridLabels.last(), Modifier.align(Alignment.TopEnd).background(p.card).padding(start = 4.dp), size = 10.sp, color = p.muted)
-        }
     }
 }
 
@@ -445,7 +443,7 @@ private fun HBar(label: String, fraction: Float, value: String, strong: Boolean)
         Box(Modifier.weight(1f).height(10.dp).clip(RoundedCornerShape(5.dp)).background(p.field)) {
             Box(
                 Modifier.fillMaxWidth(fraction.coerceIn(0f, 1f)).height(10.dp).clip(RoundedCornerShape(5.dp))
-                    .background(if (strong) p.accent else p.accent.copy(alpha = 0.45f))
+                    .background(if (strong) p.accent else androidx.compose.ui.graphics.lerp(p.card, p.accent, 0.45f))
             )
         }
         Txt(value, Modifier.width(48.dp), size = 13.sp, weight = FontWeight.SemiBold, align = TextAlign.End, maxLines = 1)
@@ -455,9 +453,9 @@ private fun HBar(label: String, fraction: Float, value: String, strong: Boolean)
 private fun levelColor(p: Palette, f: Float?): Color = when {
     f == null -> p.field
     f <= 0f -> p.faint
-    f < 0.4f -> p.accent.copy(alpha = 0.3f)
-    f < 0.7f -> p.accent.copy(alpha = 0.55f)
-    f < 1f -> p.accent.copy(alpha = 0.8f)
+    f < 0.4f -> androidx.compose.ui.graphics.lerp(p.card, p.accent, 0.3f)
+    f < 0.7f -> androidx.compose.ui.graphics.lerp(p.card, p.accent, 0.55f)
+    f < 1f -> androidx.compose.ui.graphics.lerp(p.card, p.accent, 0.8f)
     else -> p.accent
 }
 
@@ -467,11 +465,12 @@ private fun LevelHeatmap(levels: Map<Long, Float?>, today: Long, weeks: Int) {
     val p = LocalPalette.current
     val lastMonday = today - dow(today)
     val firstMonday = lastMonday - 7L * (weeks - 1)
-    Row(Modifier.fillMaxWidth()) {
-        Column(Modifier.width(14.dp).height(1.dp)) {}
-        Canvas(Modifier.weight(1f).height(((weeks * 0) + 7 * 14 + 6 * 3).dp)) {
-            val gap = 3.dp.toPx()
-            val cell = minOf((size.width - gap * (weeks - 1)) / weeks, (size.height - gap * 6) / 7)
+    androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth()) {
+        val gapDp = 3.dp
+        val cellDp = (maxWidth - gapDp * (weeks - 1)) / weeks
+        Canvas(Modifier.fillMaxWidth().height(cellDp * 7 + gapDp * 6)) {
+            val gap = gapDp.toPx()
+            val cell = (size.width - gap * (weeks - 1)) / weeks
             for (w in 0 until weeks) {
                 for (r in 0..6) {
                     val d = firstMonday + w * 7L + r
