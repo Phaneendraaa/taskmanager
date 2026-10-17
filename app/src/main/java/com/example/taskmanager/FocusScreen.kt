@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -198,7 +199,7 @@ fun FocusScreen(vm: AppViewModel, onClose: (() -> Unit)?) {
                 Column(Modifier.weight(1f)) {
                     Txt("Working on", size = 12.sp, color = p.muted)
                     Txt(
-                        vm.focusLabel.ifBlank { "Choose from today's priorities" },
+                        vm.focusLabel.ifBlank { "Pick a task, habit or anything" },
                         size = 15.sp,
                         weight = FontWeight.SemiBold,
                         maxLines = 1
@@ -238,25 +239,33 @@ fun FocusScreen(vm: AppViewModel, onClose: (() -> Unit)?) {
     }
 
     if (pickTask) {
-        val options = ArrayList<String>()
-        vm.prioritiesFor(today).forEach { id -> vm.taskById(id)?.let { if (!it.done) options.add(it.title) } }
-        vm.habits.filter { it.isDue(today) && today !in it.doneDays }.forEach { options.add(it.name) }
-        vm.tasks.filter { !it.done }.forEach { options.add(it.title) }
+        val priorityIds = vm.prioritiesFor(today)
+        val priorityTitles = priorityIds.mapNotNull { id -> vm.taskById(id)?.takeIf { !it.done }?.title }
+        val taskTitles = vm.tasks.filter { !it.done && it.id !in priorityIds }
+            .sortedWith(compareBy({ it.dueDay ?: Long.MAX_VALUE }, { -it.priority })).map { it.title }
+        val habitNames = vm.habits.sortedWith(compareBy({ today in it.doneDays }, { it.timeMinute ?: Int.MAX_VALUE })).map { it.name }
+        var custom by remember { mutableStateOf("") }
         AlertDialog(
             onDismissRequest = { pickTask = false },
-            title = { Text("Working on") },
+            title = { Text("What are you focusing on?") },
             text = {
-                Column(Modifier.verticalScroll(rememberScrollState())) {
-                    DialogRow("No task", vm.focusLabel.isBlank()) {
-                        vm.focusLabel = ""
-                        pickTask = false
-                    }
-                    options.distinct().forEach { name ->
-                        DialogRow(name, vm.focusLabel == name) {
-                            vm.focusLabel = name
-                            pickTask = false
+                Column(Modifier.heightIn(max = 460.dp).verticalScroll(rememberScrollState())) {
+                    Row(
+                        Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(p.field).padding(start = 12.dp, end = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(Modifier.weight(1f).padding(vertical = 12.dp)) {
+                            PlainField(custom, { custom = it.take(60) }, "Type anything, e.g. Revise chapter 4", singleLine = true, size = 14.sp)
                         }
+                        TextButton(onClick = {
+                            if (custom.isNotBlank()) { vm.focusLabel = custom.trim(); pickTask = false }
+                        }) { Text("Use") }
                     }
+                    Spacer(Modifier.height(8.dp))
+                    DialogRow("Nothing specific", vm.focusLabel.isBlank()) { vm.focusLabel = ""; pickTask = false }
+                    PickGroup("Today's priorities", priorityTitles, vm.focusLabel) { vm.focusLabel = it; pickTask = false }
+                    PickGroup("Tasks", taskTitles, vm.focusLabel) { vm.focusLabel = it; pickTask = false }
+                    PickGroup("Habits", habitNames, vm.focusLabel) { vm.focusLabel = it; pickTask = false }
                 }
             },
             confirmButton = { TextButton(onClick = { pickTask = false }) { Text("Close") } }
@@ -381,4 +390,13 @@ private fun QuickLengthDialog(vm: AppViewModel, onDismiss: () -> Unit) {
         confirmButton = { TextButton(onClick = { apply(value.toInt()) }) { Text("Set") } },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
     )
+}
+
+@Composable
+private fun PickGroup(title: String, items: List<String>, current: String, onPick: (String) -> Unit) {
+    if (items.isEmpty()) return
+    val p = LocalPalette.current
+    Spacer(Modifier.height(10.dp))
+    Txt(title.uppercase(), size = 11.sp, weight = FontWeight.SemiBold, color = p.muted, modifier = Modifier.padding(start = 6.dp, bottom = 2.dp))
+    items.distinct().forEach { name -> DialogRow(name, current == name) { onPick(name) } }
 }
