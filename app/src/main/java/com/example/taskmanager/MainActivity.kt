@@ -34,7 +34,7 @@ class MainActivity : ComponentActivity() {
                 )
                 onDispose { }
             }
-            AppTheme(dark, vm.accentKey) {
+            AppTheme(dark, vm.accentKey, vm.uiScale) {
                 if (vm.onboarded) AppRoot(vm) else OnboardingScreen(vm)
             }
         }

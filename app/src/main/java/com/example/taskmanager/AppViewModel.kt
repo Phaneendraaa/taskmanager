@@ -49,6 +49,21 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         private set
     var focusLabel by mutableStateOf("")
 
+    /** "compact", "standard" or "large". */
+    var displaySize by mutableStateOf(prefs.getString("displaySize", "compact") ?: "compact")
+        private set
+
+    val uiScale: Float get() = when (displaySize) {
+        "standard" -> 0.94f
+        "large" -> 1.0f
+        else -> 0.88f
+    }
+
+    fun updateDisplaySize(key: String) {
+        displaySize = key
+        prefs.edit().putString("displaySize", key).apply()
+    }
+
     /** Who the person wants to become, from onboarding. Shown on Today as a quiet reminder. */
     var identity by mutableStateOf(prefs.getString("identity", "") ?: "")
         private set

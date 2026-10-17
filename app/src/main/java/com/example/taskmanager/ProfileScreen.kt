@@ -171,6 +171,16 @@ fun ProfileScreen(
             }
         }
 
+        Spacer(Modifier.height(16.dp))
+        Txt("Display size", size = 13.sp, weight = FontWeight.SemiBold, color = p.muted)
+        Spacer(Modifier.height(8.dp))
+        val sizes = listOf("compact", "standard", "large")
+        SegmentedControl(
+            listOf("Compact", "Standard", "Large"),
+            sizes.indexOf(vm.displaySize).coerceAtLeast(0),
+            { vm.updateDisplaySize(sizes[it]) }
+        )
+
         Spacer(Modifier.height(22.dp))
         SettingsRow(Ic.TARGET, "Daily goal", "${vm.dailyGoal} habits and tasks per day") { goalDialog = true }
         Spacer(Modifier.height(10.dp))

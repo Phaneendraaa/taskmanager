@@ -79,7 +79,7 @@ fun paletteFor(dark: Boolean, accent: String): Palette = when (accent) {
 }
 
 @Composable
-fun AppTheme(dark: Boolean, accent: String = "sage", content: @Composable () -> Unit) {
+fun AppTheme(dark: Boolean, accent: String = "sage", scale: Float = 0.88f, content: @Composable () -> Unit) {
     val p = paletteFor(dark, accent)
     val scheme = if (dark) {
         darkColorScheme(
@@ -104,7 +104,10 @@ fun AppTheme(dark: Boolean, accent: String = "sage", content: @Composable () -> 
             surfaceContainerHigh = p.card, surfaceContainerHighest = p.field
         )
     }
-    CompositionLocalProvider(LocalPalette provides p) {
+    // Display size: shrinks the whole layout a little so more fits on screen without scrolling.
+    val base = androidx.compose.ui.platform.LocalDensity.current
+    val scaled = androidx.compose.ui.unit.Density(base.density * scale, base.fontScale)
+    CompositionLocalProvider(LocalPalette provides p, androidx.compose.ui.platform.LocalDensity provides scaled) {
         MaterialTheme(colorScheme = scheme, content = content)
     }
 }
