@@ -48,7 +48,8 @@ fun TodayScreen(
     onOpenTask: (String) -> Unit,
     onOpenHabit: (String) -> Unit,
     onOpenSettings: () -> Unit,
-    onAddTask: () -> Unit
+    onAddTask: () -> Unit,
+    onHabitMore: (String) -> Unit = {}
 ) {
     val p = LocalPalette.current
     val now = vm.now
@@ -266,7 +267,7 @@ fun TodayScreen(
                 items(list.size) { i ->
                     val h = list[i]
                     Column(Modifier.padding(horizontal = 20.dp, vertical = 3.dp)) {
-                        HabitRow(h, today, { vm.toggleHabitDay(h.id, today) }, { onOpenHabit(h.id) })
+                        HabitRow(h, today, { vm.toggleHabitDay(h.id, today) }, { onOpenHabit(h.id) }, onMore = { onHabitMore(h.id) })
                         if (h.minimum.isNotBlank() && today !in h.doneDays) {
                             Txt(
                                 "Short on time? " + h.minimum.trim().trimEnd('.'),

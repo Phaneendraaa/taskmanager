@@ -535,3 +535,49 @@ fun HabitForm(
         )
     }
 }
+
+/** Full-screen editor for one habit, opened from its menu or the habit page. */
+@Composable
+fun EditHabitScreen(vm: AppViewModel, habitId: String, onDone: () -> Unit) {
+    val p = LocalPalette.current
+    val habit = vm.habitById(habitId)
+    if (habit == null) {
+        onDone()
+        return
+    }
+    val draft = remember(habitId) { HabitDraft(habit) }
+    Column(
+        Modifier
+            .fillMaxSize()
+            .background(p.bg)
+            .systemBarsPadding()
+            .imePadding()
+    ) {
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            RoundIconButton(Ic.CLOSE, onClick = onDone)
+            Spacer(Modifier.width(14.dp))
+            Txt("Edit habit", size = 22.sp, weight = FontWeight.SemiBold, serif = true)
+        }
+        Column(
+            Modifier
+                .weight(1f)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp)
+        ) {
+            HabitFields(draft)
+            Spacer(Modifier.height(24.dp))
+        }
+        GradientButton(
+            text = "Save changes",
+            onClick = {
+                vm.upsertHabit(draft.applyTo(habit))
+                onDone()
+            },
+            enabled = draft.name.isNotBlank(),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp)
+        )
+    }
+}

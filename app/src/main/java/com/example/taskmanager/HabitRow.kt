@@ -2,7 +2,10 @@ package com.example.taskmanager
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -72,6 +75,7 @@ fun habitSubtitle(h: Habit): String {
  * One habit line. [bar] draws the colored edge used on the Habits tab, [checkAtEnd] moves the
  * tick to the right, and [more] shows the "..." button instead of a chevron.
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun HabitRow(
     habit: Habit,
@@ -81,7 +85,8 @@ fun HabitRow(
     modifier: Modifier = Modifier,
     bar: Boolean = false,
     checkAtEnd: Boolean = false,
-    subtitle: String = habitSubtitle(habit)
+    subtitle: String = habitSubtitle(habit),
+    onMore: (() -> Unit)? = null
 ) {
     val p = LocalPalette.current
     val done = today in habit.doneDays
@@ -90,7 +95,7 @@ fun HabitRow(
         modifier
             .fillMaxWidth()
             .cardStyle(p, 16.dp)
-            .clickable(onClick = onClick),
+            .combinedClickable(onClick = onClick, onLongClick = onMore),
         verticalAlignment = Alignment.CenterVertically
     ) {
         if (bar) {
@@ -129,10 +134,13 @@ fun HabitRow(
             )
             Txt(subtitle, size = 12.sp, color = p.muted, maxLines = 1)
         }
-        if (checkAtEnd) {
-            CheckCircle(done, onToggle)
-            AppIcon(Ic.CHEVRON_RIGHT, p.muted, size = 18.dp)
-            Spacer(Modifier.width(10.dp))
+        if (checkAtEnd) CheckCircle(done, onToggle)
+        if (onMore != null) {
+            Box(
+                Modifier.size(40.dp).clip(CircleShape).clickable(onClickLabel = "Edit or delete", onClick = onMore),
+                contentAlignment = Alignment.Center
+            ) { AppIcon(Ic.MORE_H, p.muted, size = 20.dp) }
+            Spacer(Modifier.width(4.dp))
         } else {
             AppIcon(Ic.CHEVRON_RIGHT, p.faint, size = 16.dp)
             Spacer(Modifier.width(12.dp))

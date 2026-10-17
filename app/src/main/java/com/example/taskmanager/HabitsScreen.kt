@@ -39,7 +39,8 @@ fun HabitsScreen(
     vm: AppViewModel,
     onBack: (() -> Unit)?,
     onOpenHabit: (String) -> Unit,
-    onAdd: () -> Unit
+    onAdd: () -> Unit,
+    onHabitMore: (String) -> Unit = {}
 ) {
     val p = LocalPalette.current
     val today = vm.now.toLocalDate().toEpochDay()
@@ -124,7 +125,8 @@ fun HabitsScreen(
                                 onClick = { onOpenHabit(h.id) },
                                 modifier = Modifier.alpha(if (isDue) 1f else 0.55f),
                                 checkAtEnd = true,
-                                subtitle = habitStatus(h, today)
+                                subtitle = habitStatus(h, today),
+                                onMore = { onHabitMore(h.id) }
                             )
                         }
                     }

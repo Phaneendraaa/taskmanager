@@ -42,13 +42,13 @@ fun HabitDetail(
     vm: AppViewModel,
     habitId: String,
     onBack: () -> Unit,
-    onDeleted: (Habit) -> Unit
+    onEdit: () -> Unit,
+    onDelete: () -> Unit
 ) {
     val p = LocalPalette.current
     val today = vm.now.toLocalDate().toEpochDay()
     var tab by rememberSaveable { mutableIntStateOf(0) }
     val habit = vm.habitById(habitId)
-    val draft = remember(habitId) { HabitDraft(habit) }
 
     // The habit only disappears through Delete, which closes this screen.
     if (habit == null) return
@@ -69,7 +69,9 @@ fun HabitDetail(
         ) {
             RoundIconButton(Ic.BACK, onClick = onBack)
             Spacer(Modifier.size(14.dp))
-            Txt("Habit details", size = 22.sp, weight = FontWeight.Bold, serif = true)
+            Txt("Habit", size = 22.sp, weight = FontWeight.SemiBold, serif = true, modifier = Modifier.weight(1f))
+            RoundIconButton(Ic.EDIT, onClick = onEdit, bordered = false, bg = Color.Transparent)
+            RoundIconButton(Ic.TRASH, onClick = onDelete, bordered = false, bg = Color.Transparent, tint = StatusRed)
         }
         Column(
             Modifier
@@ -101,42 +103,27 @@ fun HabitDetail(
             Spacer(Modifier.height(12.dp))
             MakeItStick(vm, habit, today)
             Spacer(Modifier.height(16.dp))
-            SegmentedControl(listOf("Overview", "History", "Edit"), tab, { tab = it })
+            SegmentedControl(listOf("Overview", "History"), tab, { tab = it })
             Spacer(Modifier.height(18.dp))
-
-            when (tab) {
-                0 -> Overview(vm, habit, today)
-                1 -> History(vm, habit, today)
-                else -> {
-                    HabitFields(draft)
-                    Spacer(Modifier.height(24.dp))
-                    GradientButton(
-                        text = "Save changes",
-                        onClick = {
-                            vm.upsertHabit(draft.applyTo(habit))
-                            tab = 0
-                        },
-                        enabled = draft.name.isNotBlank(),
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    Spacer(Modifier.height(12.dp))
-                    Row(
-                        Modifier
-                            .fillMaxWidth()
-                            .height(52.dp)
-                            .clip(RoundedCornerShape(50))
-                            .border(1.dp, StatusRed.copy(alpha = 0.6f), RoundedCornerShape(50))
-                            .clickable {
-                                val removed = vm.deleteHabit(habit.id)
-                                if (removed != null) onDeleted(removed)
-                            },
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        AppIcon(Ic.TRASH, StatusRed, size = 20.dp)
-                        Spacer(Modifier.width(8.dp))
-                        Txt("Delete habit", size = 15.sp, weight = FontWeight.SemiBold, color = StatusRed)
-                    }
+            if (tab == 0) Overview(vm, habit, today) else History(vm, habit, today)
+            Spacer(Modifier.height(18.dp))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Row(
+                    Modifier.weight(1f).height(48.dp).clip(RoundedCornerShape(14.dp)).background(p.field).clickable(onClick = onEdit),
+                    horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically
+                ) {
+                    AppIcon(Ic.EDIT, p.text, size = 18.dp)
+                    Spacer(Modifier.width(8.dp))
+                    Txt("Edit", size = 15.sp, weight = FontWeight.SemiBold)
+                }
+                Row(
+                    Modifier.weight(1f).height(48.dp).clip(RoundedCornerShape(14.dp))
+                        .border(1.dp, StatusRed.copy(alpha = 0.5f), RoundedCornerShape(14.dp)).clickable(onClick = onDelete),
+                    horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically
+                ) {
+                    AppIcon(Ic.TRASH, StatusRed, size = 18.dp)
+                    Spacer(Modifier.width(8.dp))
+                    Txt("Delete", size = 15.sp, weight = FontWeight.SemiBold, color = StatusRed)
                 }
             }
             Spacer(Modifier.height(30.dp))

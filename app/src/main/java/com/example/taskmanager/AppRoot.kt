@@ -42,6 +42,7 @@ sealed interface Screen {
     data object Settings : Screen
     data object NewHabit : Screen
     data class HabitDetail(val id: String) : Screen
+    data class EditHabit(val id: String) : Screen
     data class Detail(val id: String) : Screen
     data class EditTask(val id: String) : Screen
 }
@@ -53,6 +54,8 @@ fun AppRoot(vm: AppViewModel) {
     var addMode by rememberSaveable { mutableIntStateOf(1) }
     val stack = remember { mutableStateListOf<Screen>() }
     var showAdd by remember { mutableStateOf(false) }
+    var habitMenu by remember { mutableStateOf<String?>(null) }
+    var confirmDelete by remember { mutableStateOf<String?>(null) }
     val today = vm.now.toLocalDate().toEpochDay()
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -72,6 +75,7 @@ fun AppRoot(vm: AppViewModel) {
     val top = stack.lastOrNull()
     BackHandler(enabled = top != null) { pop() }
     BackHandler(enabled = showAdd && top == null) { showAdd = false }
+    BackHandler(enabled = habitMenu != null) { habitMenu = null }
 
     Box(Modifier.fillMaxSize().background(p.bg)) {
         Scaffold(
@@ -89,14 +93,16 @@ fun AppRoot(vm: AppViewModel) {
                     onOpenTask = { id -> stack.add(Screen.Detail(id)) },
                     onOpenHabit = { id -> stack.add(Screen.HabitDetail(id)) },
                     onOpenSettings = { stack.add(Screen.Settings) },
-                    onAddTask = { stack.add(Screen.NewTask(vm.selectedDay)) }
+                    onAddTask = { stack.add(Screen.NewTask(vm.selectedDay)) },
+                    onHabitMore = { habitMenu = it }
                 )
                 1 -> Box(Modifier.padding(bottom = padding.calculateBottomPadding())) {
                     HabitsScreen(
                         vm = vm,
                         onBack = null,
                         onOpenHabit = { id -> stack.add(Screen.HabitDetail(id)) },
-                        onAdd = { stack.add(Screen.NewHabit) }
+                        onAdd = { stack.add(Screen.NewHabit) },
+                        onHabitMore = { habitMenu = it }
                     )
                 }
                 2 -> Box(Modifier.padding(bottom = padding.calculateBottomPadding())) {
@@ -160,18 +166,10 @@ fun AppRoot(vm: AppViewModel) {
                         vm = vm,
                         habitId = top.id,
                         onBack = { pop() },
-                        onDeleted = { h ->
-                            pop()
-                            scope.launch {
-                                val r = snackbar.showSnackbar(
-                                    "Habit deleted",
-                                    actionLabel = "Undo",
-                                    duration = SnackbarDuration.Short
-                                )
-                                if (r == SnackbarResult.ActionPerformed) vm.restoreHabit(h)
-                            }
-                        }
+                        onEdit = { stack.add(Screen.EditHabit(top.id)) },
+                        onDelete = { confirmDelete = top.id }
                     )
+                    is Screen.EditHabit -> EditHabitScreen(vm, top.id) { pop() }
                     is Screen.Detail -> TaskDetail(
                         vm = vm,
                         taskId = top.id,
@@ -207,6 +205,34 @@ fun AppRoot(vm: AppViewModel) {
                     }
                 }
             }
+        }
+
+        val menuHabit = habitMenu?.let { vm.habitById(it) }
+        if (menuHabit != null) {
+            HabitMenuSheet(
+                name = menuHabit.name,
+                onEdit = { habitMenu = null; stack.add(Screen.EditHabit(menuHabit.id)) },
+                onDelete = { habitMenu = null; confirmDelete = menuHabit.id },
+                onDismiss = { habitMenu = null }
+            )
+        }
+        val toDelete = confirmDelete?.let { vm.habitById(it) }
+        if (toDelete != null) {
+            ConfirmDeleteHabit(
+                name = toDelete.name,
+                onConfirm = {
+                    confirmDelete = null
+                    if (top is Screen.HabitDetail && top.id == toDelete.id) pop()
+                    val removed = vm.deleteHabit(toDelete.id)
+                    if (removed != null) {
+                        scope.launch {
+                            val r = snackbar.showSnackbar("Habit deleted", actionLabel = "Undo", duration = SnackbarDuration.Short)
+                            if (r == SnackbarResult.ActionPerformed) vm.restoreHabit(removed)
+                        }
+                    }
+                },
+                onDismiss = { confirmDelete = null }
+            )
         }
     }
 }
