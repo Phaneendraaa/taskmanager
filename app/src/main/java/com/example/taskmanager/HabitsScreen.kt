@@ -103,7 +103,7 @@ fun HabitsScreen(
                     val due = group.filter { it.isDue(today) }
                     val done = due.count { today in it.doneDays }
                     Row(
-                        Modifier.fillMaxWidth().padding(top = 18.dp, bottom = 8.dp),
+                        Modifier.fillMaxWidth().padding(top = 14.dp, bottom = 6.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Txt(
@@ -115,7 +115,7 @@ fun HabitsScreen(
                         )
                         Txt("$done/${due.size}", size = 13.sp, color = p.muted)
                     }
-                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         group.forEach { h ->
                             val isDue = h.isDue(today)
                             HabitRow(

@@ -155,7 +155,6 @@ fun TodayScreen(
                             }
                         }
                         RoundIconButton(Ic.SEARCH, onClick = { searching = true }, bordered = false, bg = androidx.compose.ui.graphics.Color.Transparent)
-                        RoundIconButton(Ic.PLUS, onClick = onAddTask, bordered = false, bg = androidx.compose.ui.graphics.Color.Transparent)
                         RoundIconButton(Ic.GEAR, onClick = onOpenSettings, bordered = false, bg = androidx.compose.ui.graphics.Color.Transparent)
                     }
                 }
@@ -185,9 +184,9 @@ fun TodayScreen(
 
             // Day summary: one flat card, three numbers.
             item {
-                Spacer(Modifier.height(18.dp))
+                Spacer(Modifier.height(14.dp))
                 Row(
-                    Modifier.padding(horizontal = 20.dp).fillMaxWidth().cardStyle(p).padding(vertical = 16.dp),
+                    Modifier.padding(horizontal = 20.dp).fillMaxWidth().cardStyle(p).padding(vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     SummaryCell("$doneHabits/${dueHabits.size}", "Habits", Modifier.weight(1f))
@@ -239,7 +238,7 @@ fun TodayScreen(
                 item {
                     Row(
                         Modifier.padding(horizontal = 20.dp, vertical = 4.dp).fillMaxWidth()
-                            .cardStyle(p).clickable { picker = true }.padding(horizontal = 16.dp, vertical = 15.dp),
+                            .cardStyle(p).clickable { picker = true }.padding(horizontal = 16.dp, vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         AppIcon(Ic.PLUS, p.accentText, size = 19.dp, stroke = 2.2f)
@@ -265,7 +264,7 @@ fun TodayScreen(
                 }
                 items(list.size) { i ->
                     val h = list[i]
-                    Column(Modifier.padding(horizontal = 20.dp, vertical = 4.dp)) {
+                    Column(Modifier.padding(horizontal = 20.dp, vertical = 3.dp)) {
                         HabitRow(h, today, { vm.toggleHabitDay(h.id, today) }, { onOpenHabit(h.id) })
                         if (h.minimum.isNotBlank() && today !in h.doneDays) {
                             Txt(
@@ -329,7 +328,7 @@ private fun VDivider() {
 @Composable
 private fun Header(text: String, trailing: String, trailingColor: androidx.compose.ui.graphics.Color = LocalPalette.current.muted) {
     Row(
-        Modifier.fillMaxWidth().padding(start = 22.dp, end = 22.dp, top = 26.dp, bottom = 10.dp),
+        Modifier.fillMaxWidth().padding(start = 22.dp, end = 22.dp, top = 20.dp, bottom = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Txt(text, size = 19.sp, weight = FontWeight.SemiBold, serif = true, modifier = Modifier.weight(1f))

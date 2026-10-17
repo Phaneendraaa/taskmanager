@@ -107,18 +107,18 @@ fun HabitRow(
         if (!checkAtEnd) CheckCircle(done, onToggle)
         Box(
             Modifier
-                .size(38.dp)
+                .size(34.dp)
                 .clip(RoundedCornerShape(10.dp))
                 .background(p.field),
             contentAlignment = Alignment.Center
         ) {
-            AppIcon(habit.iconKind(), tint, size = 20.dp)
+            AppIcon(habit.iconKind(), tint, size = 18.dp)
         }
         Spacer(Modifier.width(12.dp))
         Column(
             Modifier
                 .weight(1f)
-                .padding(vertical = 10.dp)
+                .padding(vertical = 8.dp)
         ) {
             Txt(
                 habit.name,
@@ -134,8 +134,8 @@ fun HabitRow(
             AppIcon(Ic.CHEVRON_RIGHT, p.muted, size = 18.dp)
             Spacer(Modifier.width(10.dp))
         } else {
-            AppIcon(Ic.MORE_H, p.muted, size = 20.dp)
-            Spacer(Modifier.width(14.dp))
+            AppIcon(Ic.CHEVRON_RIGHT, p.faint, size = 16.dp)
+            Spacer(Modifier.width(12.dp))
         }
     }
 }

@@ -48,7 +48,7 @@ fun TaskCard(
             .fillMaxWidth()
             .cardStyle(p, 16.dp)
             .clickable(onClick = onClick)
-            .padding(horizontal = 8.dp, vertical = 9.dp),
+            .padding(horizontal = 8.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         CheckCircle(task.done, onToggle)
