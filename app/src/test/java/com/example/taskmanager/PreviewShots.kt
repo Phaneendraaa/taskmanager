@@ -97,5 +97,7 @@ class PreviewShots {
     @Test fun settings_light() = shot("settings", false) { ProfileScreen(it, PaddingValues(0.dp), {}, {}) }
     @Test fun onboarding_light() = shot("onboarding", false, waitMs = 4500, fresh = true) { OnboardingScreen(it) }
     @Test fun add_sheet_light() = shot("addsheet", false) { AddSheet({}, {}, {}) }
+    @Test fun taskform_light() = shot("taskform", false) { TaskForm(it, null, LocalDate.now().toEpochDay(), LocalDate.now().toEpochDay(), {}, {}) }
+    @Test fun habitform_light() = shot("habitform", false) { HabitForm(it, LocalDate.now().toEpochDay(), {}, {}) }
     @Test fun focus_dark() = shot("focus", true) { FocusScreen(it, null) }
 }
