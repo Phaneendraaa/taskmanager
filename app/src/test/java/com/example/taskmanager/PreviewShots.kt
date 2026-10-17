@@ -64,8 +64,8 @@ class PreviewShots {
         return vm
     }
 
-    private fun shot(name: String, dark: Boolean, content: @Composable (AppViewModel) -> Unit) {
-        val vm = seeded()
+    private fun shot(name: String, dark: Boolean, waitMs: Long = 1200, fresh: Boolean = false, content: @Composable (AppViewModel) -> Unit) {
+        val vm = if (fresh) AppViewModel(ApplicationProvider.getApplicationContext<Application>()) else seeded()
         // Screens contain endless timers; step the clock by hand instead of waiting for idle.
         rule.mainClock.autoAdvance = false
         rule.setContent {
@@ -73,10 +73,12 @@ class PreviewShots {
                 Box(Modifier.fillMaxSize()) { content(vm) }
             }
         }
-        rule.mainClock.advanceTimeBy(600)
-        shadowOf(Looper.getMainLooper()).idle()
-        rule.mainClock.advanceTimeBy(600)
-        shadowOf(Looper.getMainLooper()).idle()
+        var t = 0L
+        while (t < waitMs) {
+            rule.mainClock.advanceTimeBy(300)
+            shadowOf(Looper.getMainLooper()).idle()
+            t += 300
+        }
         // Draw the window directly; waiting for "idle" never finishes while timers are running.
         val view = rule.activity.window.decorView
         val bitmap = Bitmap.createBitmap(view.width.coerceAtLeast(1), view.height.coerceAtLeast(1), Bitmap.Config.ARGB_8888)
@@ -93,5 +95,7 @@ class PreviewShots {
     @Test fun habits_light() = shot("habits", false) { HabitsScreen(it, null, {}, {}) }
     @Test fun stats_light() = shot("stats", false) { InsightsScreen(it, PaddingValues(0.dp)) }
     @Test fun settings_light() = shot("settings", false) { ProfileScreen(it, PaddingValues(0.dp), {}, {}) }
+    @Test fun onboarding_light() = shot("onboarding", false, waitMs = 4500, fresh = true) { OnboardingScreen(it) }
+    @Test fun add_sheet_light() = shot("addsheet", false) { AddSheet({}, {}, {}) }
     @Test fun focus_dark() = shot("focus", true) { FocusScreen(it, null) }
 }
