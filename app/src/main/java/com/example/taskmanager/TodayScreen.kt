@@ -49,7 +49,8 @@ fun TodayScreen(
     onOpenHabit: (String) -> Unit,
     onOpenSettings: () -> Unit,
     onAddTask: () -> Unit,
-    onHabitMore: (String) -> Unit = {}
+    onHabitMore: (String) -> Unit = {},
+    onTaskMore: (String) -> Unit = {}
 ) {
     val p = LocalPalette.current
     val now = vm.now
@@ -232,8 +233,7 @@ fun TodayScreen(
                 val t = picked[i]
                 Row(Modifier.padding(horizontal = 20.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                     Txt("${i + 1}", Modifier.width(18.dp), size = 15.sp, serif = true, weight = FontWeight.SemiBold, color = p.muted)
-                    TaskCard(t, today, now, { vm.toggleTask(t.id) }, { onOpenTask(t.id) }, Modifier.weight(1f))
-                    MiniAction(Ic.CLOSE, "Remove from priorities") { vm.togglePriority(today, t.id) }
+                    TaskCard(t, today, now, { vm.toggleTask(t.id) }, { onOpenTask(t.id) }, Modifier.weight(1f), onMore = { onTaskMore(t.id) })
                 }
             }
             if (picked.size < 3) {
@@ -288,21 +288,21 @@ fun TodayScreen(
                 item { Header("Overdue tasks", overdue.size.toString(), StatusRed) }
                 items(overdue.size) { i ->
                     val t = overdue[i]
-                    TaskRowWithPin(t, today, now, vm, onOpenTask, canPin = picked.size < 3)
+                    TaskCard(t, today, now, { vm.toggleTask(t.id) }, { onOpenTask(t.id) }, Modifier.padding(horizontal = 20.dp, vertical = 4.dp), onMore = { onTaskMore(t.id) })
                 }
             }
             if (todayOther.isNotEmpty()) {
                 item { Header("Today's tasks", todayOther.size.toString()) }
                 items(todayOther.size) { i ->
                     val t = todayOther[i]
-                    TaskRowWithPin(t, today, now, vm, onOpenTask, canPin = picked.size < 3)
+                    TaskCard(t, today, now, { vm.toggleTask(t.id) }, { onOpenTask(t.id) }, Modifier.padding(horizontal = 20.dp, vertical = 4.dp), onMore = { onTaskMore(t.id) })
                 }
             }
             if (upcoming.isNotEmpty()) {
                 item { Header("Upcoming tasks", "next 7 days") }
                 items(upcoming.size) { i ->
                     val t = upcoming[i]
-                    TaskRowWithPin(t, today, now, vm, onOpenTask, canPin = picked.size < 3)
+                    TaskCard(t, today, now, { vm.toggleTask(t.id) }, { onOpenTask(t.id) }, Modifier.padding(horizontal = 20.dp, vertical = 4.dp), onMore = { onTaskMore(t.id) })
                 }
             }
 
@@ -423,27 +423,3 @@ private fun PriorityPicker(
     )
 }
 
-@Composable
-private fun MiniAction(ic: Ic, label: String, onClick: () -> Unit) {
-    val p = LocalPalette.current
-    Box(
-        Modifier.padding(start = 6.dp).size(36.dp).clip(CircleShape).clickable(onClickLabel = label, onClick = onClick),
-        contentAlignment = Alignment.Center
-    ) { AppIcon(ic, p.muted, size = 18.dp) }
-}
-
-/** A task with a quick button to make it one of today's three. */
-@Composable
-private fun TaskRowWithPin(
-    t: Task,
-    today: Long,
-    now: java.time.LocalDateTime,
-    vm: AppViewModel,
-    onOpenTask: (String) -> Unit,
-    canPin: Boolean
-) {
-    Row(Modifier.padding(horizontal = 20.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-        TaskCard(t, today, now, { vm.toggleTask(t.id) }, { onOpenTask(t.id) }, Modifier.weight(1f))
-        if (canPin && !t.done) MiniAction(Ic.TARGET, "Make a priority") { vm.togglePriority(today, t.id) }
-    }
-}

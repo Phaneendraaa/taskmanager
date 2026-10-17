@@ -205,3 +205,74 @@ fun ConfirmDeleteHabit(name: String, onConfirm: () -> Unit, onDismiss: () -> Uni
         dismissButton = { androidx.compose.material3.TextButton(onClick = onDismiss) { androidx.compose.material3.Text("Cancel") } }
     )
 }
+
+/** Edit, make today's priority, or delete one task. */
+@Composable
+fun TaskMenuSheet(
+    name: String,
+    isPriority: Boolean,
+    onEdit: () -> Unit,
+    onTogglePriority: () -> Unit,
+    onDelete: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    val p = LocalPalette.current
+    Box(
+        Modifier
+            .fillMaxSize()
+            .background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.45f))
+            .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onDismiss),
+        contentAlignment = Alignment.BottomCenter
+    ) {
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp))
+                .background(p.bg)
+                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {}
+                .navigationBarsPadding()
+                .padding(horizontal = 20.dp, vertical = 20.dp)
+        ) {
+            Txt(name, size = 20.sp, weight = FontWeight.SemiBold, serif = true, maxLines = 2)
+            Spacer(Modifier.height(16.dp))
+            AddOption(Ic.EDIT, "Edit task", "Title, date, time, priority and notes", onEdit)
+            Spacer(Modifier.height(10.dp))
+            if (isPriority) {
+                AddOption(Ic.CLOSE, "Remove from today's priorities", "It stays in your task list", onTogglePriority)
+            } else {
+                AddOption(Ic.TARGET, "Make it today's priority", "One of the three that make today a good day", onTogglePriority)
+            }
+            Spacer(Modifier.height(10.dp))
+            Row(
+                Modifier.fillMaxWidth().cardStyle(p).clickable(onClick = onDelete).padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    Modifier.size(42.dp).clip(RoundedCornerShape(12.dp)).background(p.field),
+                    contentAlignment = Alignment.Center
+                ) { AppIcon(Ic.TRASH, StatusRed, size = 22.dp) }
+                Spacer(Modifier.width(14.dp))
+                Column(Modifier.weight(1f)) {
+                    Txt("Delete task", size = 16.sp, weight = FontWeight.SemiBold, color = StatusRed)
+                    Txt("You will be asked to confirm", size = 12.sp, color = p.muted)
+                }
+            }
+            Spacer(Modifier.height(6.dp))
+        }
+    }
+}
+
+@Composable
+fun ConfirmDeleteTask(name: String, onConfirm: () -> Unit, onDismiss: () -> Unit) {
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { androidx.compose.material3.Text("Delete \"$name\"?") },
+        text = { androidx.compose.material3.Text("The task and its sub-tasks will be removed. You can undo right after.") },
+        confirmButton = {
+            androidx.compose.material3.TextButton(onClick = onConfirm) {
+                androidx.compose.material3.Text("Delete", color = StatusRed)
+            }
+        },
+        dismissButton = { androidx.compose.material3.TextButton(onClick = onDismiss) { androidx.compose.material3.Text("Cancel") } }
+    )
+}

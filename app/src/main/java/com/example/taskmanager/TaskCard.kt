@@ -1,7 +1,9 @@
 package com.example.taskmanager
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -21,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import java.time.LocalDateTime
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun TaskCard(
     task: Task,
@@ -28,7 +31,8 @@ fun TaskCard(
     now: LocalDateTime,
     onToggle: () -> Unit,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onMore: (() -> Unit)? = null
 ) {
     val p = LocalPalette.current
     val overdue = task.isOverdue(now)
@@ -47,8 +51,8 @@ fun TaskCard(
         modifier
             .fillMaxWidth()
             .cardStyle(p, 16.dp)
-            .clickable(onClick = onClick)
-            .padding(horizontal = 8.dp, vertical = 6.dp),
+            .combinedClickable(onClick = onClick, onLongClick = onMore)
+            .padding(start = 8.dp, end = if (onMore != null) 0.dp else 8.dp, top = 6.dp, bottom = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         CheckCircle(task.done, onToggle)
@@ -85,8 +89,15 @@ fun TaskCard(
             }
         }
         if (task.priority == 3) {
-            AppIcon(Ic.FLAG, StatusRed, size = 20.dp)
-            Spacer(Modifier.width(8.dp))
+            AppIcon(Ic.FLAG, StatusRed, size = 18.dp)
+            Spacer(Modifier.width(if (onMore != null) 0.dp else 8.dp))
+        }
+        if (onMore != null) {
+            Box(
+                Modifier.size(40.dp).clip(CircleShape).clickable(onClickLabel = "Task options", onClick = onMore),
+                contentAlignment = Alignment.Center
+            ) { AppIcon(Ic.MORE_H, p.muted, size = 20.dp) }
+            Spacer(Modifier.width(4.dp))
         }
     }
 }

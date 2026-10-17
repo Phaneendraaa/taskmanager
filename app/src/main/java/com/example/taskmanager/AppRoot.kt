@@ -56,6 +56,18 @@ fun AppRoot(vm: AppViewModel) {
     var showAdd by remember { mutableStateOf(false) }
     var habitMenu by remember { mutableStateOf<String?>(null) }
     var confirmDelete by remember { mutableStateOf<String?>(null) }
+    var taskMenu by remember { mutableStateOf<String?>(null) }
+    var confirmDeleteTask by remember { mutableStateOf<String?>(null) }
+
+    fun deleteTaskWithUndo(id: String) {
+        val removed = vm.deleteTask(id)
+        if (removed != null) {
+            scope.launch {
+                val r = snackbar.showSnackbar("Task deleted", actionLabel = "Undo", duration = SnackbarDuration.Short)
+                if (r == SnackbarResult.ActionPerformed) vm.restoreTask(removed)
+            }
+        }
+    }
     val today = vm.now.toLocalDate().toEpochDay()
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -76,6 +88,7 @@ fun AppRoot(vm: AppViewModel) {
     BackHandler(enabled = top != null) { pop() }
     BackHandler(enabled = showAdd && top == null) { showAdd = false }
     BackHandler(enabled = habitMenu != null) { habitMenu = null }
+    BackHandler(enabled = taskMenu != null) { taskMenu = null }
 
     Box(Modifier.fillMaxSize().background(p.bg)) {
         Scaffold(
@@ -94,7 +107,8 @@ fun AppRoot(vm: AppViewModel) {
                     onOpenHabit = { id -> stack.add(Screen.HabitDetail(id)) },
                     onOpenSettings = { stack.add(Screen.Settings) },
                     onAddTask = { stack.add(Screen.NewTask(vm.selectedDay)) },
-                    onHabitMore = { habitMenu = it }
+                    onHabitMore = { habitMenu = it },
+                    onTaskMore = { taskMenu = it }
                 )
                 1 -> Box(Modifier.padding(bottom = padding.calculateBottomPadding())) {
                     HabitsScreen(
@@ -176,20 +190,7 @@ fun AppRoot(vm: AppViewModel) {
                         today = today,
                         onBack = { pop() },
                         onEdit = { stack.add(Screen.EditTask(top.id)) },
-                        onDelete = {
-                            val removed = vm.deleteTask(top.id)
-                            pop()
-                            if (removed != null) {
-                                scope.launch {
-                                    val r = snackbar.showSnackbar(
-                                        "Task deleted",
-                                        actionLabel = "Undo",
-                                        duration = SnackbarDuration.Short
-                                    )
-                                    if (r == SnackbarResult.ActionPerformed) vm.restoreTask(removed)
-                                }
-                            }
-                        }
+                        onDelete = { confirmDeleteTask = top.id }
                     )
                     is Screen.EditTask -> {
                         val task = vm.taskById(top.id)
@@ -232,6 +233,36 @@ fun AppRoot(vm: AppViewModel) {
                     }
                 },
                 onDismiss = { confirmDelete = null }
+            )
+        }
+
+        val menuTask = taskMenu?.let { vm.taskById(it) }
+        if (menuTask != null) {
+            val isPriority = menuTask.id in vm.prioritiesFor(today)
+            TaskMenuSheet(
+                name = menuTask.title,
+                isPriority = isPriority,
+                onEdit = { taskMenu = null; stack.add(Screen.EditTask(menuTask.id)) },
+                onTogglePriority = {
+                    taskMenu = null
+                    if (!vm.togglePriority(today, menuTask.id)) {
+                        scope.launch { snackbar.showSnackbar("Today already has three priorities. Remove one first.") }
+                    }
+                },
+                onDelete = { taskMenu = null; confirmDeleteTask = menuTask.id },
+                onDismiss = { taskMenu = null }
+            )
+        }
+        val taskToDelete = confirmDeleteTask?.let { vm.taskById(it) }
+        if (taskToDelete != null) {
+            ConfirmDeleteTask(
+                name = taskToDelete.title,
+                onConfirm = {
+                    confirmDeleteTask = null
+                    if (top is Screen.Detail && top.id == taskToDelete.id) pop()
+                    deleteTaskWithUndo(taskToDelete.id)
+                },
+                onDismiss = { confirmDeleteTask = null }
             )
         }
     }
