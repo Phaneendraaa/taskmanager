@@ -204,9 +204,9 @@ private val TOUR = listOf(
 private val PAGES = listOf("welcome", "name", "why", "identity", "dropoff", "wake", "energy", "tour", "starter", "first", "commit")
 
 @Composable
-fun OnboardingScreen(vm: AppViewModel) {
+fun OnboardingScreen(vm: AppViewModel, startPage: Int = 0) {
     val p = LocalPalette.current
-    var page by remember { mutableIntStateOf(0) }
+    var page by remember { mutableIntStateOf(startPage) }
     var name by remember { mutableStateOf(vm.userName) }
     var wake by remember { mutableIntStateOf(1) }
     val goals = remember { mutableStateListOf<String>() }

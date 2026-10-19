@@ -100,6 +100,24 @@ class PreviewShots {
     @Test fun taskform_light() = shot("taskform", false) { TaskForm(it, null, LocalDate.now().toEpochDay(), LocalDate.now().toEpochDay(), {}, {}) }
     @Test fun habitform_light() = shot("habitform", false) { HabitForm(it, LocalDate.now().toEpochDay(), {}, {}) }
     @Test fun focus_dark() = shot("focus", true) { FocusScreen(it, null) }
+    @Test fun habits_dark() = shot("habits", true) { HabitsScreen(it, null, {}, {}) }
+    @Test fun stats_dark() = shot("stats", true) { InsightsScreen(it, PaddingValues(0.dp)) }
+    @Test fun settings_dark() = shot("settings", true) { ProfileScreen(it, PaddingValues(0.dp), {}, {}) }
+    @Test fun weekly_dark() = shot("weekly", true) { WeeklyReviewScreen(it, weekStart(LocalDate.now().toEpochDay())) {} }
+    @Test fun today_picks_light() = shot("today", false) {
+        val today = LocalDate.now().toEpochDay()
+        androidx.compose.runtime.remember { it.tasks.take(2).forEach { t -> it.togglePriority(today, t.id) }; 0 }
+        TodayScreen(it, PaddingValues(0.dp), {}, {}, {}, {})
+    }
+    @Test fun taskmenu_light() = shot("taskmenu", false) { TaskMenuSheet("Finish database assignment", false, {}, {}, {}, {}) }
+    @Test fun habitmenu_dark() = shot("habitmenu", true) { HabitMenuSheet("Read 10 pages", {}, {}, {}) }
+    @Test fun onb_name() = shot("onb-name", false, waitMs = 1500, fresh = true) { OnboardingScreen(it, 1) }
+    @Test fun onb_why() = shot("onb-why", false, waitMs = 1500, fresh = true) { OnboardingScreen(it, 2) }
+    @Test fun onb_dropoff() = shot("onb-dropoff", false, waitMs = 1500, fresh = true) { OnboardingScreen(it, 4) }
+    @Test fun onb_tour() = shot("onb-tour", false, waitMs = 1500, fresh = true) { OnboardingScreen(it, 7) }
+    @Test fun onb_starter() = shot("onb-starter", false, waitMs = 1500, fresh = true) { OnboardingScreen(it, 8) }
+    @Test fun onb_first() = shot("onb-first", true, waitMs = 1500, fresh = true) { OnboardingScreen(it, 9) }
+    @Test fun onb_commit() = shot("onb-commit", false, waitMs = 1500, fresh = true) { OnboardingScreen(it, 10) }
     @Test fun widget_light() {
         val ctx = ApplicationProvider.getApplicationContext<Application>()
         val vm = seeded()

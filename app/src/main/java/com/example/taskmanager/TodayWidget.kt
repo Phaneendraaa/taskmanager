@@ -112,7 +112,8 @@ class TodayWidget : AppWidgetProvider() {
 
             val muted = context.getColor(R.color.widget_muted)
             val text = context.getColor(R.color.widget_text)
-            val shown = rows.take(MAX_ROWS)
+            // With more than fits, show one row less to leave room for the "more" line.
+            val shown = rows.take(if (rows.size > MAX_ROWS) MAX_ROWS - 1 else MAX_ROWS)
             for (i in 0 until MAX_ROWS) {
                 if (i >= shown.size) {
                     views.setViewVisibility(ROWS[i], android.view.View.GONE)
