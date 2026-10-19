@@ -26,6 +26,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     val reviews = mutableStateListOf<DayReview>()
     /** Task ids picked as "today's three", per epoch day. */
     val priorities = androidx.compose.runtime.mutableStateMapOf<Long, List<String>>()
+    /** Weekly review answers, keyed by the Monday of the reviewed week. */
+    val weeklies = androidx.compose.runtime.mutableStateMapOf<Long, WeekReview>()
 
     var onboarded by mutableStateOf(prefs.getBoolean("onboarded", false))
         private set
@@ -427,6 +429,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         focusSessions.clear()
         reviews.clear()
         priorities.clear()
+        weeklies.clear()
+        saveWeekly()
         Rest.days = emptySet()
         Rest.save(prefs)
         saveHabits()
@@ -738,6 +742,35 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     fun reviewFor(day: Long): DayReview? = reviews.firstOrNull { it.day == day }
 
+    fun weekReviewFor(week: Long): WeekReview? = weeklies[week]
+
+    fun saveWeekReview(week: Long, kind: String, note: String) {
+        weeklies[week] = WeekReview(week, kind, note.trim().take(120))
+        saveWeekly()
+    }
+
+    private fun saveWeekly() {
+        val o = JSONObject()
+        weeklies.values.sortedBy { it.week }.takeLast(104).forEach {
+            o.put(it.week.toString(), JSONObject().put("kind", it.kind).put("note", it.note))
+        }
+        prefs.edit().putString("weekly", o.toString()).apply()
+    }
+
+    private fun loadWeekly() {
+        weeklies.clear()
+        try {
+            val o = JSONObject(prefs.getString("weekly", "{}") ?: "{}")
+            val keys = o.keys()
+            while (keys.hasNext()) {
+                val k = keys.next()
+                val e = o.getJSONObject(k)
+                weeklies[k.toLong()] = WeekReview(k.toLong(), e.optString("kind", "protect"), e.optString("note", ""))
+            }
+        } catch (e: Exception) {
+        }
+    }
+
     fun saveReview(day: Long, rating: Int, note: String) {
         reviews.removeAll { it.day == day }
         reviews.add(DayReview(day, rating.coerceIn(1, 5), note.trim()))
@@ -756,6 +789,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private fun loadPlanning() {
+        loadWeekly()
         priorities.clear()
         reviews.clear()
         try {

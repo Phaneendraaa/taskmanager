@@ -45,6 +45,7 @@ sealed interface Screen {
     data class EditHabit(val id: String) : Screen
     data class Detail(val id: String) : Screen
     data class EditTask(val id: String) : Screen
+    data class WeeklyReview(val week: Long) : Screen
 }
 
 @Composable
@@ -111,7 +112,8 @@ fun AppRoot(vm: AppViewModel) {
                     onAddTask = { stack.add(Screen.NewTask(vm.selectedDay)) },
                     onHabitMore = { habitMenu = it },
                     onTaskMore = { taskMenu = it },
-                    onRest = { showRest = true }
+                    onRest = { showRest = true },
+                    onReview = { week -> stack.add(Screen.WeeklyReview(week)) }
                 )
                 1 -> Box(Modifier.padding(bottom = padding.calculateBottomPadding())) {
                     HabitsScreen(
@@ -178,6 +180,7 @@ fun AppRoot(vm: AppViewModel) {
                         onOpenHabits = { stack.clear(); tab = 1 },
                         onOpenFocus = { stack.clear(); tab = 2 },
                         onRest = { showRest = true },
+                        onReview = { stack.add(Screen.WeeklyReview(reviewWeekNow(today))) },
                         onBack = { pop() }
                     )
                     is Screen.HabitDetail -> HabitDetail(
@@ -188,6 +191,7 @@ fun AppRoot(vm: AppViewModel) {
                         onDelete = { confirmDelete = top.id }
                     )
                     is Screen.EditHabit -> EditHabitScreen(vm, top.id) { pop() }
+                    is Screen.WeeklyReview -> WeeklyReviewScreen(vm, top.week) { pop() }
                     is Screen.Detail -> TaskDetail(
                         vm = vm,
                         taskId = top.id,

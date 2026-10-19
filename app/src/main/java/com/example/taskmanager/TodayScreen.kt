@@ -51,12 +51,16 @@ fun TodayScreen(
     onAddTask: () -> Unit,
     onHabitMore: (String) -> Unit = {},
     onTaskMore: (String) -> Unit = {},
-    onRest: () -> Unit = {}
+    onRest: () -> Unit = {},
+    onReview: (Long) -> Unit = {}
 ) {
     val p = LocalPalette.current
     val now = vm.now
     val today = now.toLocalDate().toEpochDay()
     val restLabel = restThrough(today)
+    val reviewWeek = reviewWeekDue(today, now.hour)
+        ?.takeIf { vm.weekReviewFor(it) == null && (vm.habits.isNotEmpty() || vm.tasks.any { t -> t.done }) }
+    val carry = vm.weekReviewFor(weekStart(today) - 7)?.takeIf { it.note.isNotBlank() }
 
     var searching by rememberSaveable { mutableStateOf(false) }
     var query by rememberSaveable { mutableStateOf("") }
@@ -198,6 +202,27 @@ fun TodayScreen(
                     SummaryCell(if (picked.isEmpty()) "–" else "${picked.count { it.done }}/${picked.size}", "Priorities", Modifier.weight(1f))
                     VDivider()
                     SummaryCell(if (focusToday >= 60) "${focusToday / 60}h ${focusToday % 60}m" else "${focusToday}m", "Focus", Modifier.weight(1f))
+                }
+            }
+
+            // Weekly review, when it is due.
+            if (reviewWeek != null) {
+                item {
+                    WeeklyReviewCard(onStart = { onReview(reviewWeek) }, modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 14.dp))
+                }
+            }
+
+            // What last week's review asked to protect or drop.
+            if (carry != null) {
+                item {
+                    Row(Modifier.padding(start = 22.dp, end = 22.dp, top = 12.dp), verticalAlignment = Alignment.Top) {
+                        Box(Modifier.padding(top = 6.dp).size(6.dp).clip(CircleShape).background(p.accent))
+                        Spacer(Modifier.width(10.dp))
+                        Txt(
+                            (if (carry.kind == "drop") "This week, drop: " else "This week, protect: ") + carry.note,
+                            size = 13.sp, color = p.muted, lineHeight = 18.sp
+                        )
+                    }
                 }
             }
 

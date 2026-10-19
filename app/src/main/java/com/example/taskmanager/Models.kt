@@ -93,6 +93,28 @@ data class DayReview(val day: Long, val rating: Int, val note: String)
 
 data class FocusSession(val endedAt: Long, val minutes: Int, val label: String)
 
+/** The weekly review answer: what to protect or drop in the week after [week] (epoch day of that Monday). */
+data class WeekReview(val week: Long, val kind: String, val note: String)
+
+/** Monday of the week that holds [day]. */
+fun weekStart(day: Long): Long = day - (LocalDate.ofEpochDay(day).dayOfWeek.value - 1)
+
+/** The week whose review is due now: Sunday from 4 pm for this week, Monday and Tuesday for last week. */
+fun reviewWeekDue(today: Long, hour: Int): Long? {
+    val dow = LocalDate.ofEpochDay(today).dayOfWeek.value - 1
+    return when {
+        dow == 6 && hour >= 16 -> today - 6
+        dow <= 1 -> today - dow - 7
+        else -> null
+    }
+}
+
+/** The week a review opened by hand covers: last week early in the week, otherwise this week so far. */
+fun reviewWeekNow(today: Long): Long {
+    val dow = LocalDate.ofEpochDay(today).dayOfWeek.value - 1
+    return if (dow <= 1) today - dow - 7 else today - dow
+}
+
 fun Task.isOverdue(now: LocalDateTime): Boolean {
     val day = dueDay ?: return false
     if (done) return false

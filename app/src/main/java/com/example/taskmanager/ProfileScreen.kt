@@ -56,6 +56,7 @@ fun ProfileScreen(
     onOpenHabits: () -> Unit,
     onOpenFocus: () -> Unit,
     onRest: () -> Unit = {},
+    onReview: () -> Unit = {},
     onBack: (() -> Unit)? = null
 ) {
     val p = LocalPalette.current
@@ -218,6 +219,8 @@ fun ProfileScreen(
                 )
             )
         }
+        Spacer(Modifier.height(10.dp))
+        SettingsRow(Ic.CALENDAR, "Weekly review", "Look back and choose what to protect next week", onReview)
         Spacer(Modifier.height(10.dp))
         SettingsRow(
             Ic.MOON, "Rest days",

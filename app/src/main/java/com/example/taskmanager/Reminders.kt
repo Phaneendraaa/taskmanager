@@ -338,6 +338,20 @@ class NudgeReceiver : BroadcastReceiver() {
             }
         } else {
             val open = Reminders.loadHabits(prefs).filter { it.isDue(today) && today !in it.doneDays && it.createdDay <= today }
+            val dow = LocalDate.ofEpochDay(today).dayOfWeek.value - 1
+            if (dow == 6) {
+                val reviewed = try {
+                    org.json.JSONObject(prefs.getString("weekly", "{}") ?: "{}").has((today - 6).toString())
+                } catch (e: Exception) {
+                    false
+                }
+                if (!reviewed) {
+                    Reminders.notifyNudge(
+                        context, 7102, "Your week in review",
+                        "Two minutes: what went well, what slipped, and what to protect next week."
+                    )
+                }
+            }
             if (open.isNotEmpty()) {
                 val names = open.take(2).joinToString(" and ") { it.name }
                 val more = if (open.size > 2) " and ${open.size - 2} more" else ""
