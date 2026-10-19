@@ -55,6 +55,7 @@ fun ProfileScreen(
     padding: PaddingValues,
     onOpenHabits: () -> Unit,
     onOpenFocus: () -> Unit,
+    onRest: () -> Unit = {},
     onBack: (() -> Unit)? = null
 ) {
     val p = LocalPalette.current
@@ -217,6 +218,12 @@ fun ProfileScreen(
                 )
             )
         }
+        Spacer(Modifier.height(10.dp))
+        SettingsRow(
+            Ic.MOON, "Rest days",
+            restThrough(today)?.let { "Resting through $it" } ?: "Pause habits without losing your run",
+            onRest
+        )
         Spacer(Modifier.height(10.dp))
         SettingsRow(Ic.REPEAT, "Habits", "${vm.habits.size} habits, manage and edit", onOpenHabits)
         Spacer(Modifier.height(10.dp))

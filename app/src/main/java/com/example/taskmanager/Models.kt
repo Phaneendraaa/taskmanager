@@ -1,6 +1,10 @@
 package com.example.taskmanager
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
+import android.content.SharedPreferences
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -116,7 +120,45 @@ fun Task.iconKind(): Ic {
 
 enum class Period(val label: String) { MORNING("Morning"), AFTERNOON("Afternoon"), EVENING("Evening"), ANYTIME("Anytime") }
 
+/**
+ * Days the person chose to rest (illness, travel, a break). Habits are not due on these days,
+ * so streaks, rates and reminders skip them instead of counting a miss.
+ * Held as snapshot state so screens refresh when it changes.
+ */
+object Rest {
+    var days: Set<Long> by mutableStateOf(emptySet())
+
+    fun load(prefs: SharedPreferences) {
+        val raw = prefs.getString("restDays", "") ?: ""
+        days = raw.split(',').mapNotNull { it.trim().toLongOrNull() }.toSet()
+    }
+
+    fun save(prefs: SharedPreferences) {
+        val keep = LocalDate.now().toEpochDay() - 400
+        prefs.edit().putString("restDays", days.filter { it >= keep }.joinToString(",")).apply()
+    }
+
+    /** Last day of the unbroken rest that includes [today], or null when [today] is not a rest day. */
+    fun endOfCurrent(today: Long): Long? {
+        if (today !in days) return null
+        var d = today
+        while ((d + 1) in days) d++
+        return d
+    }
+}
+
+/** "today", "tomorrow" or "Fri, 23 Oct": the last day of the current rest, or null when not resting. */
+fun restThrough(today: Long): String? {
+    val end = Rest.endOfCurrent(today) ?: return null
+    return when (end - today) {
+        0L -> "today"
+        1L -> "tomorrow"
+        else -> formatDay(end, today)
+    }
+}
+
 fun Habit.isDue(day: Long): Boolean {
+    if (day in Rest.days) return false
     val dow = LocalDate.ofEpochDay(day).dayOfWeek.value - 1
     return (daysMask shr dow) and 1 == 1
 }

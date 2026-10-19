@@ -148,6 +148,56 @@ private fun AddOption(ic: Ic, title: String, sub: String, onClick: () -> Unit) {
     }
 }
 
+/**
+ * Rest days: pause habits for a day, a few days or a week without breaking any run.
+ * [onRest] gets the first day as an offset from today (0 or -1) and the number of days.
+ */
+@Composable
+fun RestSheet(restingUntil: String?, onRest: (Int, Int) -> Unit, onEnd: () -> Unit, onDismiss: () -> Unit) {
+    val p = LocalPalette.current
+    Box(
+        Modifier
+            .fillMaxSize()
+            .background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.45f))
+            .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onDismiss),
+        contentAlignment = Alignment.BottomCenter
+    ) {
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp))
+                .background(p.bg)
+                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {}
+                .navigationBarsPadding()
+                .padding(horizontal = 20.dp, vertical = 20.dp)
+        ) {
+            Txt("Take a rest", size = 22.sp, weight = FontWeight.SemiBold, serif = true)
+            Spacer(Modifier.height(4.dp))
+            Txt(
+                if (restingUntil != null) "Habits are paused through $restingUntil. Your streaks are safe."
+                else "Sick, travelling or just tired? Habits pause and your streaks stay safe.",
+                size = 14.sp, color = p.muted, lineHeight = 19.sp
+            )
+            Spacer(Modifier.height(16.dp))
+            if (restingUntil != null) {
+                AddOption(Ic.PLAY, "Resume today", "Habits come back right now", onEnd)
+                Spacer(Modifier.height(10.dp))
+            } else {
+                AddOption(Ic.MOON, "Just today", "Back to normal tomorrow") { onRest(0, 1) }
+                Spacer(Modifier.height(10.dp))
+            }
+            AddOption(Ic.MOON, "Three days", "Today and the next two") { onRest(0, 3) }
+            Spacer(Modifier.height(10.dp))
+            AddOption(Ic.MOON, "One week", "Seven days, starting today") { onRest(0, 7) }
+            if (restingUntil == null) {
+                Spacer(Modifier.height(10.dp))
+                AddOption(Ic.CLOCK, "Yesterday was a rest day", "Remove yesterday's miss from your run") { onRest(-1, 1) }
+            }
+            Spacer(Modifier.height(6.dp))
+        }
+    }
+}
+
 /** Edit or delete one habit. */
 @Composable
 fun HabitMenuSheet(name: String, onEdit: () -> Unit, onDelete: () -> Unit, onDismiss: () -> Unit) {

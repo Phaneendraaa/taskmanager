@@ -244,6 +244,7 @@ object Reminders {
 
     /** Reads the saved habits directly, so alarms work even when the app is not running. */
     fun loadHabits(prefs: SharedPreferences): List<Habit> {
+        Rest.load(prefs)
         val raw = prefs.getString("habits", null) ?: return emptyList()
         return try {
             val arr = JSONArray(raw)

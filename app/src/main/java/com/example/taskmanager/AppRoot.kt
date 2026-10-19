@@ -54,6 +54,7 @@ fun AppRoot(vm: AppViewModel) {
     var addMode by rememberSaveable { mutableIntStateOf(1) }
     val stack = remember { mutableStateListOf<Screen>() }
     var showAdd by remember { mutableStateOf(false) }
+    var showRest by remember { mutableStateOf(false) }
     var habitMenu by remember { mutableStateOf<String?>(null) }
     var confirmDelete by remember { mutableStateOf<String?>(null) }
     var taskMenu by remember { mutableStateOf<String?>(null) }
@@ -87,6 +88,7 @@ fun AppRoot(vm: AppViewModel) {
     val top = stack.lastOrNull()
     BackHandler(enabled = top != null) { pop() }
     BackHandler(enabled = showAdd && top == null) { showAdd = false }
+    BackHandler(enabled = showRest) { showRest = false }
     BackHandler(enabled = habitMenu != null) { habitMenu = null }
     BackHandler(enabled = taskMenu != null) { taskMenu = null }
 
@@ -108,7 +110,8 @@ fun AppRoot(vm: AppViewModel) {
                     onOpenSettings = { stack.add(Screen.Settings) },
                     onAddTask = { stack.add(Screen.NewTask(vm.selectedDay)) },
                     onHabitMore = { habitMenu = it },
-                    onTaskMore = { taskMenu = it }
+                    onTaskMore = { taskMenu = it },
+                    onRest = { showRest = true }
                 )
                 1 -> Box(Modifier.padding(bottom = padding.calculateBottomPadding())) {
                     HabitsScreen(
@@ -174,6 +177,7 @@ fun AppRoot(vm: AppViewModel) {
                         padding = PaddingValues(0.dp),
                         onOpenHabits = { stack.clear(); tab = 1 },
                         onOpenFocus = { stack.clear(); tab = 2 },
+                        onRest = { showRest = true },
                         onBack = { pop() }
                     )
                     is Screen.HabitDetail -> HabitDetail(
@@ -206,6 +210,24 @@ fun AppRoot(vm: AppViewModel) {
                     }
                 }
             }
+        }
+
+        if (showRest) {
+            RestSheet(
+                restingUntil = restThrough(today),
+                onRest = { offset, count ->
+                    showRest = false
+                    vm.addRest(today + offset, count)
+                    scope.launch {
+                        snackbar.showSnackbar(
+                            if (offset < 0) "Yesterday marked as a rest day" else "Resting. Your streaks are safe.",
+                            duration = SnackbarDuration.Short
+                        )
+                    }
+                },
+                onEnd = { showRest = false; vm.endRest(today) },
+                onDismiss = { showRest = false }
+            )
         }
 
         val menuHabit = habitMenu?.let { vm.habitById(it) }

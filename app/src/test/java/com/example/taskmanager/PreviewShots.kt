@@ -100,4 +100,9 @@ class PreviewShots {
     @Test fun taskform_light() = shot("taskform", false) { TaskForm(it, null, LocalDate.now().toEpochDay(), LocalDate.now().toEpochDay(), {}, {}) }
     @Test fun habitform_light() = shot("habitform", false) { HabitForm(it, LocalDate.now().toEpochDay(), {}, {}) }
     @Test fun focus_dark() = shot("focus", true) { FocusScreen(it, null) }
+    @Test fun rest_sheet_light() = shot("restsheet", false) { RestSheet(null, { _, _ -> }, {}, {}) }
+    @Test fun today_rest_dark() = shot("today-rest", true) {
+        androidx.compose.runtime.remember { it.addRest(LocalDate.now().toEpochDay(), 3) }
+        TodayScreen(it, PaddingValues(0.dp), {}, {}, {}, {})
+    }
 }

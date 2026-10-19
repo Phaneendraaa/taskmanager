@@ -97,6 +97,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     var selectedDay by mutableStateOf(LocalDate.now().toEpochDay())
 
     init {
+        Rest.load(prefs)
         tasks.addAll(loadTasks())
         habits.addAll(loadHabits())
         loadPlanning()
@@ -108,11 +109,29 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     /** Picks up changes made outside the app, such as tapping Done on a notification. */
     fun reloadFromDisk() {
+        Rest.load(prefs)
         val fresh = loadHabits()
         if (fresh.map { it.id to it.doneDays } != habits.map { it.id to it.doneDays }) {
             habits.clear()
             habits.addAll(fresh)
         }
+    }
+
+    // ---------- Rest days ----------
+
+    fun isResting(day: Long): Boolean = day in Rest.days
+
+    /** Marks [count] days starting at [from] as rest days. Habits are paused and streaks stay safe. */
+    fun addRest(from: Long, count: Int) {
+        val n = count.coerceIn(1, 30)
+        Rest.days = Rest.days + (from until from + n).toSet()
+        Rest.save(prefs)
+    }
+
+    /** Ends the rest: today and every later rest day go back to normal. */
+    fun endRest(today: Long) {
+        Rest.days = Rest.days.filter { it < today }.toSet()
+        Rest.save(prefs)
     }
 
     fun updateIdentity(text: String) {
@@ -202,6 +221,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         habits.clear()
         habits.addAll(loadHabits())
         loadPlanning()
+        Rest.load(prefs)
         focusSessions.clear()
         focusSessions.addAll(loadFocus())
         themeMode = prefs.getString("theme", "light") ?: "light"
@@ -407,6 +427,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         focusSessions.clear()
         reviews.clear()
         priorities.clear()
+        Rest.days = emptySet()
+        Rest.save(prefs)
         saveHabits()
         saveTasks()
         saveFocus()

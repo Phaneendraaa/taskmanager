@@ -50,11 +50,13 @@ fun TodayScreen(
     onOpenSettings: () -> Unit,
     onAddTask: () -> Unit,
     onHabitMore: (String) -> Unit = {},
-    onTaskMore: (String) -> Unit = {}
+    onTaskMore: (String) -> Unit = {},
+    onRest: () -> Unit = {}
 ) {
     val p = LocalPalette.current
     val now = vm.now
     val today = now.toLocalDate().toEpochDay()
+    val restLabel = restThrough(today)
 
     var searching by rememberSaveable { mutableStateOf(false) }
     var query by rememberSaveable { mutableStateOf("") }
@@ -191,11 +193,37 @@ fun TodayScreen(
                     Modifier.padding(horizontal = 20.dp).fillMaxWidth().cardStyle(p).padding(vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    SummaryCell("$doneHabits/${dueHabits.size}", "Habits", Modifier.weight(1f))
+                    SummaryCell(if (restLabel != null) "Rest" else "$doneHabits/${dueHabits.size}", "Habits", Modifier.weight(1f))
                     VDivider()
                     SummaryCell(if (picked.isEmpty()) "–" else "${picked.count { it.done }}/${picked.size}", "Priorities", Modifier.weight(1f))
                     VDivider()
                     SummaryCell(if (focusToday >= 60) "${focusToday / 60}h ${focusToday % 60}m" else "${focusToday}m", "Focus", Modifier.weight(1f))
+                }
+            }
+
+            // Rest day: habits are paused and streaks are safe.
+            if (restLabel != null) {
+                item {
+                    Row(
+                        Modifier.padding(start = 20.dp, end = 20.dp, top = 14.dp).fillMaxWidth().cardStyle(p).height(androidx.compose.foundation.layout.IntrinsicSize.Min)
+                    ) {
+                        Box(Modifier.width(3.dp).fillMaxHeight().background(p.accent))
+                        Row(Modifier.padding(start = 14.dp, top = 14.dp, bottom = 14.dp, end = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Column(Modifier.weight(1f)) {
+                                Txt("Rest day", size = 14.sp, weight = FontWeight.SemiBold)
+                                Spacer(Modifier.height(3.dp))
+                                Txt(
+                                    "Habits are paused through $restLabel. Your streaks are safe.",
+                                    size = 13.sp, color = p.muted, lineHeight = 18.sp
+                                )
+                            }
+                            Txt(
+                                "Change",
+                                Modifier.clip(RoundedCornerShape(8.dp)).clickable { onRest() }.padding(horizontal = 12.dp, vertical = 10.dp),
+                                size = 13.sp, weight = FontWeight.SemiBold, color = p.accentText
+                            )
+                        }
+                    }
                 }
             }
 
@@ -251,10 +279,23 @@ fun TodayScreen(
             }
 
             // Routine
-            item { Header("Routine", "$doneHabits of ${dueHabits.size}") }
+            item {
+                Header(
+                    "Routine",
+                    if (restLabel != null) "resting" else "$doneHabits of ${dueHabits.size}",
+                    action = if (restLabel != null || vm.habits.isEmpty()) null else "Take a rest",
+                    onAction = onRest
+                )
+            }
             if (dueHabits.isEmpty()) {
                 item {
-                    EmptyNote(if (vm.habits.isEmpty()) "No habits yet. Add your first in the Habits tab." else "Nothing due today.")
+                    EmptyNote(
+                        when {
+                            restLabel != null -> "Rest day. Nothing is due, and nothing is lost."
+                            vm.habits.isEmpty() -> "No habits yet. Add your first in the Habits tab."
+                            else -> "Nothing due today."
+                        }
+                    )
                 }
             }
             val groups = dueHabits.groupBy { it.period() }
@@ -328,12 +369,27 @@ private fun VDivider() {
 }
 
 @Composable
-private fun Header(text: String, trailing: String, trailingColor: androidx.compose.ui.graphics.Color = LocalPalette.current.muted) {
+private fun Header(
+    text: String,
+    trailing: String,
+    trailingColor: androidx.compose.ui.graphics.Color = LocalPalette.current.muted,
+    action: String? = null,
+    onAction: () -> Unit = {}
+) {
+    val p = LocalPalette.current
     Row(
         Modifier.fillMaxWidth().padding(start = 22.dp, end = 22.dp, top = 20.dp, bottom = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Txt(text, size = 19.sp, weight = FontWeight.SemiBold, serif = true, modifier = Modifier.weight(1f))
+        if (action != null) {
+            Txt(
+                action,
+                Modifier.clip(RoundedCornerShape(8.dp)).clickable { onAction() }.padding(horizontal = 8.dp, vertical = 6.dp),
+                size = 13.sp, weight = FontWeight.SemiBold, color = p.accentText, maxLines = 1
+            )
+            Spacer(Modifier.width(6.dp))
+        }
         Txt(trailing, size = 13.sp, color = trailingColor, maxLines = 1)
     }
 }
