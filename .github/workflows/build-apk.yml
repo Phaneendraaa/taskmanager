@@ -25,7 +25,7 @@ jobs:
         run: |
           SDKM="$(command -v sdkmanager || echo "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager")"
           yes | "$SDKM" --licenses > /dev/null || true
-          "$SDKM" "platforms;android-35" "build-tools;35.0.0" || true
+          "$SDKM" "platforms;android-36" "build-tools;36.0.0" || true
 
       - name: Build debug APK
         run: |
@@ -62,6 +62,36 @@ jobs:
             --title "Latest build 5.0.${{ github.run_number }}" \
             --notes "Build 5.0.${{ github.run_number }} from commit ${{ github.sha }}. If your phone downloads an older file, use the numbered APK: it has a new name every build." \
             --target "${{ github.sha }}"
+
+      # Signed bundle for Google Play. Needs the UPLOAD_KEY_PASSWORD secret; skipped without it.
+      # The upload key itself is stored encrypted in the repo (app/upload.keystore.enc).
+      - name: Build signed release bundle
+        continue-on-error: true
+        env:
+          UPLOAD_KEY_PASSWORD: ${{ secrets.UPLOAD_KEY_PASSWORD }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ -z "$UPLOAD_KEY_PASSWORD" ]; then
+            echo "::notice title=Release bundle skipped::Add the UPLOAD_KEY_PASSWORD repository secret to build the signed bundle."
+            exit 0
+          fi
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -in app/upload.keystore.enc \
+            -out "$RUNNER_TEMP/upload.jks" -pass env:UPLOAD_KEY_PASSWORD
+          export UPLOAD_KEYSTORE_PATH="$RUNNER_TEMP/upload.jks"
+          set +e
+          ./gradlew bundleRelease --no-daemon --stacktrace > bundle.log 2>&1
+          code=$?
+          set -e
+          if [ "$code" -ne 0 ]; then
+            msg=$( { grep -E '^e: ' bundle.log; grep -A8 'What went wrong' bundle.log; } 2>/dev/null \
+              | sed -E 's#file:///home/runner/work/[^/]+/[^/]+/##' | head -60 \
+              | sed 's/%/%25/g' | awk '{printf "%s%%0A", $0}' )
+            echo "::error title=Release bundle failed::${msg}"
+            exit "$code"
+          fi
+          cp app/build/outputs/bundle/release/app-release.aab HabitAnvil.aab
+          gh release upload latest HabitAnvil.aab --clobber
+          rm -f "$RUNNER_TEMP/upload.jks"
 
       # Renders the main screens to PNG files and publishes them on the "previews" branch,
       # so spacing and clipped text can be checked without a phone. Never blocks a release.

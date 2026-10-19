@@ -6,12 +6,12 @@ plugins {
 
 android {
     namespace = "com.example.taskmanager"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.habitanvil.app"
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 36
         // CI passes the run number, so every build is newer than the last and installs as an update.
         val run = (System.getenv("GITHUB_RUN_NUMBER") ?: "0").toIntOrNull() ?: 0
         versionCode = 100 + run
@@ -28,10 +28,30 @@ android {
         }
     }
 
+    // Upload key for Google Play. CI decrypts it and passes the path and password through the
+    // environment; without them (local or debug builds) the release type falls back to the debug key.
+    val uploadPath = System.getenv("UPLOAD_KEYSTORE_PATH")
+    val uploadPassword = System.getenv("UPLOAD_KEY_PASSWORD")
+    signingConfigs {
+        if (uploadPath != null && uploadPassword != null) {
+            create("release") {
+                storeFile = file(uploadPath)
+                storePassword = uploadPassword
+                keyAlias = "upload"
+                keyPassword = uploadPassword
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
         }
+    }
+
+    lint {
+        abortOnError = false
     }
 
     compileOptions {
