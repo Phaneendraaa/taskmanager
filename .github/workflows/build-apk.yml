@@ -72,7 +72,10 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           if [ -z "$UPLOAD_KEY_PASSWORD" ]; then
-            echo "::notice title=Release bundle skipped::Add the UPLOAD_KEY_PASSWORD repository secret to build the signed bundle."
+            # No key yet: still compile the release variant (debug-signed, not published) to catch problems early.
+            ./gradlew bundleRelease --no-daemon --stacktrace > bundle.log 2>&1 \
+              && echo "::notice title=Release bundle compiles::Add the UPLOAD_KEY_PASSWORD repository secret to get the signed bundle." \
+              || { echo "::error title=Release bundle failed::$(grep -E '^e: |What went wrong' -A3 bundle.log | head -30 | sed 's/%/%25/g' | awk '{printf "%s%%0A", $0}')"; exit 1; }
             exit 0
           fi
           openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -in app/upload.keystore.enc \
