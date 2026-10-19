@@ -296,6 +296,23 @@ fun OnboardingScreen(vm: AppViewModel) {
                                 )
                             }
                         }
+                        // Skip: the quick tour jumps ahead to choosing habits, the questions end the setup.
+                        val skipLabel = when (PAGES[current]) {
+                            "tour" -> "Skip tour"
+                            "starter", "first", "commit" -> null
+                            else -> "Skip"
+                        }
+                        if (skipLabel != null) {
+                            Spacer(Modifier.size(6.dp))
+                            Txt(
+                                skipLabel,
+                                Modifier
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .clickable { if (PAGES[current] == "tour") page = PAGES.indexOf("starter") else finish() }
+                                    .padding(horizontal = 10.dp, vertical = 10.dp),
+                                size = 14.sp, weight = FontWeight.SemiBold, color = p.muted, maxLines = 1
+                            )
+                        }
                     }
                     Spacer(Modifier.height(26.dp))
                     when (PAGES[current]) {

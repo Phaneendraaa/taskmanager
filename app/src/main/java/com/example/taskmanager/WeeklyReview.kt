@@ -52,6 +52,8 @@ private fun habitWeeks(habits: List<Habit>, from: Long, to: Long): List<HabitWee
         if (due == 0) null else HabitWeek(h, due, done)
     }
 
+private fun daysText(done: Int, due: Int): String = "$done of $due " + if (due == 1) "day" else "days"
+
 private fun percentOf(list: List<HabitWeek>): Int? {
     val due = list.sumOf { it.due }
     return if (due == 0) null else list.sumOf { it.done } * 100 / due
@@ -86,7 +88,7 @@ fun WeeklyReviewScreen(vm: AppViewModel, week: Long, onBack: () -> Unit) {
 
     val well = ArrayList<String>()
     thisWeek.filter { it.done > 0 }.sortedWith(compareByDescending<HabitWeek> { it.ratio }.thenByDescending { it.done })
-        .take(2).forEach { well.add("${it.habit.name}: ${it.done} of ${it.due} days") }
+        .take(2).forEach { well.add("${it.habit.name}: ${daysText(it.done, it.due)}") }
     if (tasksDone > 0) well.add(if (tasksDone == 1) "1 task finished" else "$tasksDone tasks finished")
     if (focusMin > 0) well.add("${minutesText(focusMin)} of focused work")
 
@@ -198,7 +200,7 @@ fun WeeklyReviewScreen(vm: AppViewModel, week: Long, onBack: () -> Unit) {
             if (slipped.isEmpty()) {
                 Txt("Nothing slipped. Protect what worked.", size = 14.sp, color = p.muted, lineHeight = 19.sp)
             } else {
-                slipped.forEach { Line("${it.habit.name}: ${it.done} of ${it.due} days", Amber) }
+                slipped.forEach { Line("${it.habit.name}: ${daysText(it.done, it.due)}", Amber) }
                 Spacer(Modifier.height(6.dp))
                 Txt(
                     "One miss is fine. Set a tiny minimum version for these and the run holds.",
