@@ -38,3 +38,19 @@ Legend: DONE = pushed and the build passed, DONE = pushed, build being checked, 
 | B4 | Livelier onboarding: animated welcome, replies, your-system summary, hold to commit | DONE |
 | B5 | Previews of onboarding and create sheet | DONE |
 | B6 | Simpler task and habit forms | DONE |
+
+## Menus, focus and pause (later batches)
+| Part | What | Status |
+|---|---|---|
+| P1 | Habit and task three-dot menus with confirmation and undo | DONE |
+| P2 | Focus on any task, habit or typed label; tap the clock to change length | DONE |
+| P3 | Insights rebuilt with charts and a heatmap | DONE |
+
+## Retention release
+| Part | What | Status |
+|---|---|---|
+| W1 | Rest days: pause habits for a day, three days or a week; streaks, rates and reminders skip them | DONE |
+| W2 | Weekly review: week in numbers, what went well, what slipped, protect or drop for next week; Sunday nudge | DONE |
+| W3 | Home-screen widget: priorities and habits, tap to tick, works with the app closed | DONE |
+| W4 | Skip on onboarding questions, Skip tour on the quick tour | DONE |
+| W5 | Final design check on every screen in light and dark | DONE |

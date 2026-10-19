@@ -15,6 +15,9 @@ design with a graphite dark mode, one restrained accent. Fully offline: everythi
 - **Graduation**: after about 66 days at high consistency a habit is marked Automatic.
 - **Insights in plain words**: weekly review, best weekday and time of day, per-habit consistency,
   deep work minutes against your daily target.
+- **Rest days**: pause habits when ill or away. Streaks, rates and reminders skip those days.
+- **Weekly review**: every Sunday evening, what went well, what slipped, and one thing to protect or drop.
+- **Home-screen widget**: today's priorities and habits, tap to tick them off without opening the app.
 - **Notifications that help**: Done and Snooze buttons on reminders, a morning planning nudge,
   an evening note about what is still open, and a focus-finished alert with the screen off.
 
