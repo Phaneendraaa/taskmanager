@@ -96,7 +96,7 @@ fun HabitFields(d: HabitDraft, onMic: (() -> Unit)? = null) {
         if (granted) {
             d.reminder = true
         } else {
-            Toast.makeText(ctx, "Allow notifications for forge to get reminders", Toast.LENGTH_LONG).show()
+            Toast.makeText(ctx, "Allow notifications for HabitAnvil to get reminders", Toast.LENGTH_LONG).show()
         }
     }
     val frequency = when (d.mask) {

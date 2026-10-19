@@ -9,7 +9,7 @@ android {
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.example.taskmanager"
+        applicationId = "com.habitanvil.app"
         minSdk = 26
         targetSdk = 35
         // CI passes the run number, so every build is newer than the last and installs as an update.

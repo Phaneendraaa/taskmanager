@@ -491,7 +491,7 @@ fun OnboardingScreen(vm: AppViewModel, startPage: Int = 0) {
                     Spacer(Modifier.height(12.dp))
                     if (PAGES[current] == "commit") {
                         if (!committed) HoldToCommit { committed = true }
-                        else GradientButton("Enter forge", { finish() }, Modifier.fillMaxWidth(), icon = Ic.ARROW_RIGHT)
+                        else GradientButton("Enter HabitAnvil", { finish() }, Modifier.fillMaxWidth(), icon = Ic.ARROW_RIGHT)
                     } else GradientButton(
                         text = when {
                             PAGES[current] == "tour" -> if (tourStep < TOUR.size - 1) "Next" else "Got it"
@@ -537,7 +537,7 @@ private fun androidx.compose.foundation.layout.ColumnScope.Welcome(onStart: () -
     val enter = fadeIn(tween(700)) + slideInVertically(tween(700)) { it / 3 }
     Spacer(Modifier.height(48.dp))
     AnimatedVisibility(stage >= 1, enter = enter) {
-        Txt("forge", Modifier.fillMaxWidth(), size = 52.sp, weight = FontWeight.SemiBold, serif = true, align = TextAlign.Center)
+        Txt("HabitAnvil", Modifier.fillMaxWidth(), size = 42.sp, weight = FontWeight.SemiBold, serif = true, align = TextAlign.Center)
     }
     Spacer(Modifier.height(14.dp))
     AnimatedVisibility(stage >= 2, enter = enter) {

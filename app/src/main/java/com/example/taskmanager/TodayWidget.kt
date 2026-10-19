@@ -139,7 +139,7 @@ class TodayWidget : AppWidgetProvider() {
 
             val extra = rows.size - shown.size
             if (extra > 0) {
-                views.setTextViewText(R.id.w_more, "+$extra more in forge")
+                views.setTextViewText(R.id.w_more, "+$extra more in HabitAnvil")
                 views.setViewVisibility(R.id.w_more, android.view.View.VISIBLE)
             } else {
                 views.setViewVisibility(R.id.w_more, android.view.View.GONE)

@@ -73,7 +73,7 @@ fun ProfileScreen(
     fun toast(text: String) = Toast.makeText(context, text, Toast.LENGTH_SHORT).show()
 
     val notifPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        if (granted) vm.updateReminders(true) else toast("Allow notifications for forge to get reminders")
+        if (granted) vm.updateReminders(true) else toast("Allow notifications for HabitAnvil to get reminders")
     }
     val backup = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri: Uri? ->
         if (uri != null) {
@@ -89,7 +89,7 @@ fun ProfileScreen(
         if (uri != null) {
             try {
                 val text = context.contentResolver.openInputStream(uri)?.use { it.readBytes().toString(Charsets.UTF_8) }
-                if (text != null && vm.importBackup(text)) toast("Backup restored") else toast("That file is not a forge backup")
+                if (text != null && vm.importBackup(text)) toast("Backup restored") else toast("That file is not a HabitAnvil backup")
             } catch (e: Exception) {
                 toast("Could not read that file")
             }
@@ -237,7 +237,7 @@ fun ProfileScreen(
         Spacer(Modifier.height(22.dp))
         Txt("Data and backup", size = 16.sp, weight = FontWeight.Bold, serif = true)
         Spacer(Modifier.height(10.dp))
-        SettingsRow(Ic.DOC, "Export backup", "Save everything to a file") { backup.launch("forge-backup.json") }
+        SettingsRow(Ic.DOC, "Export backup", "Save everything to a file") { backup.launch("habitanvil-backup.json") }
         Spacer(Modifier.height(10.dp))
         SettingsRow(Ic.CLOUD, "Restore backup", "Load a file saved earlier") { confirmRestore = true }
         Spacer(Modifier.height(10.dp))
@@ -252,7 +252,7 @@ fun ProfileScreen(
 
         Spacer(Modifier.height(24.dp))
         Txt(
-            "forge " + (try { context.packageManager.getPackageInfo(context.packageName, 0).versionName } catch (e: Exception) { "" }) + "  •  Everything is stored on this phone only.",
+            "HabitAnvil " + (try { context.packageManager.getPackageInfo(context.packageName, 0).versionName } catch (e: Exception) { "" }) + "  •  Everything is stored on this phone only.",
             Modifier.fillMaxWidth(),
             size = 12.sp,
             color = p.muted

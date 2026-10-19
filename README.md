@@ -1,4 +1,4 @@
-# forge
+# HabitAnvil
 
 A calm, professional habit and focus app for adults and students. Kotlin and Jetpack Compose, paper-and-ink
 design with a graphite dark mode, one restrained accent. Fully offline: everything stays on the phone.
