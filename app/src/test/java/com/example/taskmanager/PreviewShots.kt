@@ -100,6 +100,30 @@ class PreviewShots {
     @Test fun taskform_light() = shot("taskform", false) { TaskForm(it, null, LocalDate.now().toEpochDay(), LocalDate.now().toEpochDay(), {}, {}) }
     @Test fun habitform_light() = shot("habitform", false) { HabitForm(it, LocalDate.now().toEpochDay(), {}, {}) }
     @Test fun focus_dark() = shot("focus", true) { FocusScreen(it, null) }
+    @Test fun widget_light() {
+        val ctx = ApplicationProvider.getApplicationContext<Application>()
+        val vm = seeded()
+        val today = LocalDate.now().toEpochDay()
+        vm.tasks.take(2).forEach { vm.togglePriority(today, it.id) }
+        val rv = TodayWidget.build(ctx)
+        val parent = android.widget.FrameLayout(rule.activity)
+        val v = rv.apply(rule.activity, parent)
+        val w = 1080
+        val h = 780
+        v.measure(
+            android.view.View.MeasureSpec.makeMeasureSpec(w, android.view.View.MeasureSpec.EXACTLY),
+            android.view.View.MeasureSpec.makeMeasureSpec(h, android.view.View.MeasureSpec.EXACTLY)
+        )
+        v.layout(0, 0, w, h)
+        val bitmap = Bitmap.createBitmap(w + 120, h + 120, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        canvas.drawColor(0xFF6E7F8D.toInt())
+        canvas.translate(60f, 60f)
+        v.draw(canvas)
+        val dir = File("build/previews")
+        dir.mkdirs()
+        FileOutputStream(File(dir, "widget.png")).use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+    }
     @Test fun weekly_light() = shot("weekly", false) { WeeklyReviewScreen(it, weekStart(LocalDate.now().toEpochDay())) {} }
     @Test fun rest_sheet_light() = shot("restsheet", false) { RestSheet(null, { _, _ -> }, {}, {}) }
     @Test fun today_rest_dark() = shot("today-rest", true) {

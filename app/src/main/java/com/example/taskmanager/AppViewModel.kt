@@ -117,6 +117,13 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             habits.clear()
             habits.addAll(fresh)
         }
+        // The home-screen widget can tick tasks while the app is closed.
+        val freshTasks = loadTasks()
+        if (freshTasks.map { it.id to it.done } != tasks.map { it.id to it.done }) {
+            tasks.clear()
+            tasks.addAll(freshTasks)
+        }
+        TodayWidget.refresh(getApplication<Application>())
     }
 
     // ---------- Rest days ----------
@@ -128,12 +135,14 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val n = count.coerceIn(1, 30)
         Rest.days = Rest.days + (from until from + n).toSet()
         Rest.save(prefs)
+        TodayWidget.refresh(getApplication<Application>())
     }
 
     /** Ends the rest: today and every later rest day go back to normal. */
     fun endRest(today: Long) {
         Rest.days = Rest.days.filter { it < today }.toSet()
         Rest.save(prefs)
+        TodayWidget.refresh(getApplication<Application>())
     }
 
     fun updateIdentity(text: String) {
@@ -584,6 +593,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             arr.put(o)
         }
         prefs.edit().putString("list", arr.toString()).apply()
+        TodayWidget.refresh(getApplication<Application>())
     }
 
     private fun loadTasks(): List<Task> {
@@ -673,6 +683,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
         prefs.edit().putString("habits", arr.toString()).apply()
         Reminders.sync(getApplication<Application>(), habits, remindersOn)
+        TodayWidget.refresh(getApplication<Application>())
     }
 
     private fun loadHabits(): List<Habit> {
@@ -786,6 +797,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             ra.put(JSONObject().put("day", r.day).put("rating", r.rating).put("note", r.note))
         }
         prefs.edit().putString("priorities", po.toString()).putString("reviews", ra.toString()).apply()
+        TodayWidget.refresh(getApplication<Application>())
     }
 
     private fun loadPlanning() {
